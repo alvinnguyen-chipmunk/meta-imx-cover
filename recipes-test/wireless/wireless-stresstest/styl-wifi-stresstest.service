@@ -1,0 +1,11 @@
+[Unit]
+Description=STYL Wifi Stresstest
+Requires=dbus.service
+After=NetworkManager.service
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /home/testing/wifi/wifi-stresstest.sh
+
+[Install]
+WantedBy=multi-user.target

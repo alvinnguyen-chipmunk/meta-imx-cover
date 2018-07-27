@@ -1,0 +1,1 @@
+ACTION=="remove", ENV{SUBSYSTEM}=="usb", ENV{DEVTYPE}=="usb_device", ENV{ID_VENDOR}=="0424", ENV{ID_MODEL}=="2514", RUN+="/etc/udev/scripts/usbhub-comeback.sh"

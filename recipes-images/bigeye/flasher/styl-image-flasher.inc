@@ -48,3 +48,6 @@ IMAGE_INSTALL_append = " watchdog"
 
 # Flasher utils
 IMAGE_INSTALL += "flasher-bigeye parted e2fsprogs-resize2fs"
+
+# u-boot script bootup
+IMAGE_INSTALL_append = " u-boot-bootscr"

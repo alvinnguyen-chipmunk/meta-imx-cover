@@ -1,1 +1,1 @@
-require recipes-images/bigeye/styl-image-fb-flasher.inc
+require recipes-images/bigeye/flasher/styl-image-flasher.inc

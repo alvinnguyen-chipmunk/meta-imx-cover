@@ -1,0 +1,21 @@
+setenv mmcdev 0
+setenv mmcpart 1
+setenv autoload 'no'
+setenv console 'ttymxc0'
+setenv baudrate '115200'
+setenv smp 'nosmp'
+setenv image 'zImage'
+setenv fdt_file 'imx6ull-14x14-evk.dtb'
+setenv loadaddr 0x80800000
+setenv fdt_addr 0x83800000
+setenv hello 'echo STYL Bigeye i.MX6ULL - Booting from script for emmc ...'
+setenv gpio_cmd ''
+setenv video_mxc 'video=mxc_elcdif_fb:800x480M,bpp=16'
+setenv video_mxs 'video=mxsfb:800x480M-16@60'
+setenv mmcroot '/dev/mmcblk1p2 rootfstype=ext4 rootwait rw x11=false'
+setenv mmcargs 'setenv bootargs console=${console},${baudrate} init=/lib/systemd/systemd ${smp} root=${mmcroot} ${video_mxc}'
+setenv loadfdt 'fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}'
+setenv loadimage 'fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}'
+setenv mmcboot 'bootz ${loadaddr} - ${fdt_addr}'
+setenv bootcmd 'run hello; run gpio_cmd; if run loadimage; then if run loadfdt; then run mmcargs; run mmcboot; fi; fi'
+run bootcmd

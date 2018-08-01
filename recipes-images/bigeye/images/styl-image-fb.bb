@@ -46,40 +46,43 @@ IMAGE_INSTALL_append = " rsync curl nano htop i2c-tools grep vim pkgconfig stres
 # More libraries that application needed
 IMAGE_INSTALL_append = " libpng libconfig libarchive"
 
-IMAGE_INSTALL_append = " styl-autologin"
+IMAGE_INSTALL_append = " autologin"
 
 # Add watchdog user application for watchdog timer reboot
 IMAGE_INSTALL_append = " watchdog"
 
 # Sysv init
-IMAGE_INSTALL += "initscripts"
+IMAGE_INSTALL_append = " initscripts"
 
 # Workaround for USB HUB
-IMAGE_INSTALL += "udev-rules-styl"
+IMAGE_INSTALL_append = " udev-rules-styl"
 
 # Bigeye test application
-IMAGE_INSTALL += "bigeye-testapp"
+IMAGE_INSTALL_append = " bigeye-apps"
 
 # Version rootfs and release_notes
-IMAGE_INSTALL += "image-version release-notes"
+IMAGE_INSTALL_append = " image-version release-notes"
 
 # Support Splash Screen
-IMAGE_INSTALL += "fbida"
+IMAGE_INSTALL_append = " fbida"
 
 # Other package for wifi
-IMAGE_INSTALL += "crda libnl openssl"
+IMAGE_INSTALL_append = " crda libnl openssl"
 
 # Other package support wireless from TI repositories
 
 # # Pacakge for Wifi
-IMAGE_INSTALL += "wl18xx-target-scripts wl18xx-calibrator wlconf"
-IMAGE_INSTALL += "wl18xx-fw"
+IMAGE_INSTALL_append = " wl18xx-target-scripts wl18xx-calibrator wlconf"
+IMAGE_INSTALL_append = " wl18xx-fw"
 
 # # Packages for Bluetooth
 #IMAGE_INSTALL += "uim bt-firmware bluez5 obexftp pulseaudio devmem2"
 
 # Wireless stresstest
-IMAGE_INSTALL += "wireless-stresstest"
+IMAGE_INSTALL_append = " wireless-stresstest"
 
 # Auto configure wireless connection
-IMAGE_INSTALL += "styl-usb-wireless-config"
+IMAGE_INSTALL_append = " styl-usb-wireless-config"
+
+# U-boot script bootup
+IMAGE_INSTALL_append = " u-boot-bootscr"

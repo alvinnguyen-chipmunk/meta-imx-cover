@@ -85,4 +85,4 @@ IMAGE_INSTALL_append = " wireless-stresstest"
 IMAGE_INSTALL_append = " styl-usb-wireless-config"
 
 # U-boot script bootup
-IMAGE_INSTALL_append = " u-boot-bootscr"
+IMAGE_INSTALL_append = " u-boot-script-cover"

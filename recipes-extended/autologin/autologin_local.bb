@@ -20,6 +20,6 @@ do_install() {
 	fi
 }
 
-COMPATIBLE_MACHINE_$(PN) = "(bigeye)"
+COMPATIBLE_MACHINE = "(bigeye)"
 
 

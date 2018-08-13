@@ -2,8 +2,6 @@ DESCRIPTION = "A console-only image for STYL Bigeye platform."
 
 LICENSE = "MIT"
 
-require recipes-core/images/core-image-minimal.bb
-
 # package management and dhcpserver
 EXTRA_IMAGE_FEATURES_append = " package-management debug-tweaks eclipse-debug"
 CORE_IMAGE_EXTRA_INSTALL_append = " dhcp-server dnsmasq"
@@ -29,9 +27,9 @@ IMAGE_INSTALL_append = " openssh openssh-sftp-server"
 # Qt support
 #IMAGE_INSTALL += "packagegroup-qt5-full qtbase"
 
-IMAGE_INSTALL += "ttf-dejavu-common ttf-dejavu-sans ttf-dejavu-sans-condensed ttf-dejavu-sans-mono ttf-dejavu-serif python  ttf-dejavu-serif-condensed"
+#IMAGE_INSTALL += "ttf-dejavu-common ttf-dejavu-sans ttf-dejavu-sans-condensed ttf-dejavu-sans-mono ttf-dejavu-serif python  ttf-dejavu-serif-condensed"
 
-IMAGE_INSTALL_remove = " qtwayland"
+#IMAGE_INSTALL_remove = " qtwayland"
 
 # GDB support
 IMAGE_INSTALL_append = " gdb gdbserver"
@@ -74,6 +72,7 @@ IMAGE_INSTALL_append = " crda libnl openssl"
 # # Pacakge for Wifi
 IMAGE_INSTALL_append = " wl18xx-target-scripts wl18xx-calibrator wlconf"
 IMAGE_INSTALL_append = " wl18xx-fw"
+IMAGE_INSTALL_append = " wl18xx-udev-workaround"
 
 # # Packages for Bluetooth
 #IMAGE_INSTALL += "uim bt-firmware bluez5 obexftp pulseaudio devmem2"

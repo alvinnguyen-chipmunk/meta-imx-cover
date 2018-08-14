@@ -72,7 +72,7 @@ IMAGE_INSTALL_append = " crda libnl openssl"
 # # Pacakge for Wifi
 IMAGE_INSTALL_append = " wl18xx-target-scripts wl18xx-calibrator wlconf"
 IMAGE_INSTALL_append = " wl18xx-fw"
-IMAGE_INSTALL_append = " wl18xx-udev-workaround"
+#IMAGE_INSTALL_append = " wl18xx-udev-workaround"
 
 # # Packages for Bluetooth
 #IMAGE_INSTALL += "uim bt-firmware bluez5 obexftp pulseaudio devmem2"

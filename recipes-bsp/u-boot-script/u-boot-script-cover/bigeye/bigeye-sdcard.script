@@ -22,7 +22,7 @@ setenv sdcard_args    'setenv bootargs console=${console},${baudrate} root=${sdc
 
 setenv bootexec       'bootz ${addr_kernel} - ${addr_dtb}'
 
-setenv emmc_string    'echo [STYL-Bigeye-Gateway] [Kernel-4.9.88] [EMMC-Images] [WiFi Supported]'
+setenv emmc_string    'echo [STYL-Bigeye-Gateway] [Kernel-4.9.88] [EMMC-Images] [SD Card Supported]'
 setenv sdcard_string  'echo [STYL-Bigeye-Gateway] [Kernel-4.9.88] [SDCARD-Images] [Reflashing]'
 
 setenv emmcbootcmd    'run emmc_string  ; run gpio_cmd; run emmc_preboot  ; if run load_kernel; then if run load_dtb; then run emmc_args  ; run bootexec; fi; fi'

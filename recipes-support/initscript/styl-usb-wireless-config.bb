@@ -8,7 +8,7 @@ SRCREV = "${AUTOREV}"
 
 inherit systemd
 
-RDEPENDS_${PN} = " python python-six python-pyudev python-dbus dbus-glib python-smbus bash"
+RDEPENDS_${PN} = " python python-six python-pyudev python-dbus dbus-glib python-smbus bash python-ctypes"
 
 S = "${WORKDIR}/git"
 

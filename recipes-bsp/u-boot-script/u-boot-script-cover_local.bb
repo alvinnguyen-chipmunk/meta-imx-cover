@@ -5,10 +5,9 @@ DEPENDS = "u-boot-mkimage-native"
 
 FILESEXTRAPATHS_append := "${THISDIR}/${PN}:"
 
-SRC_URI += "	file://bigeye-emmc.script	\
-		file://bigeye-net.script  	\
-		file://bigeye-release.script  	\
-		file://bigeye-sdcard.script	\
+SRC_URI += "	file://bigeye-sdcard.script	\
+		file://bigeye-wifi.script  	\
+		file://bigeye-manual.script  	\
 "
 
 DESTDIR = "/boot"

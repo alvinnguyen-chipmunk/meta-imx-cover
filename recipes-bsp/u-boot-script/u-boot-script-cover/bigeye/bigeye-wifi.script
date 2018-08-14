@@ -1,9 +1,9 @@
 setenv autoload       'no'
 
-setenv emmc_preboot   'setenv src_dev 1; setenv src_par 1; setenv name_kernel zImage; setenv name_dtb imx6ull-styl-bigeye.dtb; setenv addr_kernel 0x80800000; setenv addr_dtb 0x83800000'
-setenv sdcard_preboot 'setenv src_dev 0; setenv src_par 1; setenv name_kernel zImage; setenv name_dtb imx6ull-styl-bigeye.dtb; setenv addr_kernel 0x80800000; setenv addr_dtb 0x83800000'
+setenv emmc_preboot   'setenv src_dev 1; setenv src_par 1; setenv name_kernel zImage; setenv name_dtb imx6ull-14x14-bigeye-wifi.dtb; setenv addr_kernel 0x80800000; setenv addr_dtb 0x83800000'
+setenv sdcard_preboot 'setenv src_dev 0; setenv src_par 1; setenv name_kernel zImage; setenv name_dtb imx6ull-14x14-bigeye-flasher.dtb; setenv addr_kernel 0x80800000; setenv addr_dtb 0x83800000'
 
-setenv load_dtb       'fatload mmc ${src_dev}:${src_par} ${addr_dtb} ${name_dtb}'
+setenv load_dtb       'fatload mmc ${src_dev}:${src_par} ${addr_dtb}    ${name_dtb}'
 setenv load_kernel    'fatload mmc ${src_dev}:${src_par} ${addr_kernel} ${name_kernel}'
 
 setenv gpio_cmd       ''
@@ -18,12 +18,12 @@ setenv sdcard_rootfs  '/dev/mmcblk0p2 rootfstype=ext4 rootwait rw x11=false'
 setenv common_args    'init=/lib/systemd/systemd ${smp} ${video_b} vt.global_cursor_default=0 consoleblank=0'
 
 setenv emmc_args      'setenv bootargs console=${console},${baudrate} root=${emmc_rootfs} ${common_args}'
-setenv sdcard_args    'setenv bootargs console=${console},${baudrate} console=tty0 psplash=false root=${sdcard_rootfs} ${common_args}'
+setenv sdcard_args    'setenv bootargs console=${console},${baudrate} root=${sdcard_rootfs} ${common_args}'
 
 setenv bootexec       'bootz ${addr_kernel} - ${addr_dtb}'
 
-setenv emmc_string    'echo [STYL-Bigeye] [Kernel-4.1.15] [EMMC-Images]'
-setenv sdcard_string  'echo [STYL-Bigeye] [Kernel-4.1.15] [SDCARD-Images] [Reflashing]'
+setenv emmc_string    'echo [STYL-Bigeye-Gateway] [Kernel-4.9.88] [EMMC-Images] [WiFi Supported]'
+setenv sdcard_string  'echo [STYL-Bigeye-Gateway] [Kernel-4.9.88] [SDCARD-Images] [Reflashing]'
 
 setenv emmcbootcmd    'run emmc_string  ; run gpio_cmd; run emmc_preboot  ; if run load_kernel; then if run load_dtb; then run emmc_args  ; run bootexec; fi; fi'
 

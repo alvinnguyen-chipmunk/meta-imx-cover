@@ -1,0 +1,1516 @@
+diff --git a/Documentation/devicetree/bindings/reset/reset-imx-cover.txt b/Documentation/devicetree/bindings/reset/reset-imx-cover.txt
+new file mode 100644
+index 0000000..49f5b6f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/reset/reset-imx-cover.txt
+@@ -0,0 +1,39 @@
++GPIO reset controller via SYSFS interface supported
++=====================
++
++A GPIO reset controller controls a single GPIO that is connected to the reset
++pin of a peripheral IC. Please also refer to reset.txt in this directory for
++common reset controller binding usage.
++
++Required properties:
++- compatible: Should be "reset-imx-cover"
++- reset-gpios: A gpio used as reset line. The gpio specifier for this property
++               depends on the gpio controller that provides the gpio.
++- asserted-voltage: Voltage valude for assert state. Number 0 for low value and 1 for high value.
++ 
++Optional properties:
++- delay-ms: delay in microseconds. The gpio reset line will be asserted for this duration to reset.
++- post-delay-ms: delay in milliseconds to wait after reset.
++- auto: boolean. If this property exists, the reset line should be reset in boot time.
++
++Example:
++
++	gpio_reset: gpio_reset {
++		compatible = "reset-imx-cover";
++
++		chip0: chip0@0 {
++			gpios = <&gpio5 7 0>; 		/* Value 0 is ignore */
++			asserted-voltage = <0>;		/* line->asserted_voltage ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH */
++			delay-ms = <100>;
++			post-delay-ms = <100>;
++			auto;
++		};	
++	
++		chip1: chip1@1 {
++			gpios = <&gpio5 8 0>; 		/* Value 0 is ignore */
++			asserted-voltage = <1>;		/* line->asserted_voltage ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH */
++			delay-ms = <200>;
++			auto;
++		};
++
++	};
+diff --git a/arch/arm/boot/dts/imx6ull-14x14-bigeye-wifi.dts b/arch/arm/boot/dts/imx6ull-14x14-bigeye-wifi.dts
+new file mode 100644
+index 0000000..7e756f1
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6ull-14x14-bigeye-wifi.dts
+@@ -0,0 +1,73 @@
++/*
++ * Copyright (C) 2018 STYL Solutions Pte. Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/*
++ * NOTE: This DTS file is written for plugging in TI WL1807 Wi-Fi/BT into Slot SD1
++ */
++
++#include <dt-bindings/interrupt-controller/irq.h>
++#include "imx6ull-14x14-bigeye.dts"
++
++/ {
++	wlreg_on: fixedregulator@0 {
++		compatible = "regulator-fixed";
++		regulator-name = "wlreg_on";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		gpio = <&gpio4 28 0>;
++		startup-delay-us = <100>;
++		enable-active-high;
++		regulator-boot-on;
++	};
++};
++
++&iomuxc {
++	pinctrl_wifi: wifigrp {
++		fsl,pins = <
++			MX6UL_PAD_CSI_DATA07__GPIO4_IO28 	0x13059
++			MX6UL_PAD_CSI_PIXCLK__GPIO4_IO18 	0x13059
++		>;
++	};
++};
++
++&usdhc1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc1 &pinctrl_wifi>;
++
++	enable-sdio-wakeup;
++        keep-power-in-suspend;
++        non-removable;
++        /*pm-ignore-notify;
++        wifi-host;*/
++        vmmc-supply = <&wlreg_on>;
++        cap-power-off-card;
++        bus-width = <4>;
++        status = "okay";
++
++	#address-cells = <1>;
++	#size-cells = <0>;	
++
++	wlcore: wlcore@0 {
++		compatible = "ti,wl1807";
++		reg = <2>;
++		interrupt-parent = <&gpio4>;
++		interrupts = <18 1>;
++		/*platform-quirks = <1>;*/
++	};
++};
++
++&peripheral_reset {
++	sdiosw_in: sdiosw_in@1 {
++		gpios = <&gpio5 7 0>; 			/* MX6ULL_PAD_SNVS_TAMPER7__GPIO5_IO07 */
++		/* Switch SDIO_IN at low  state => support SD card ==> asserted value is 1 */
++		/* Switch SDIO_IN at higt state => support WIFI ==> asserted value is 0 */
++		asserted-voltage = <0>;			/* line->asserted_voltage ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH */
++		delay-ms = <200>;
++		auto;
++	};
++};
+diff --git a/arch/arm/boot/dts/imx6ull-14x14-bigeye.dts b/arch/arm/boot/dts/imx6ull-14x14-bigeye.dts
+new file mode 100644
+index 0000000..e793ddf
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6ull-14x14-bigeye.dts
+@@ -0,0 +1,708 @@
++/*
++ * Copyright (C) 2018 STYL Solutions Pte. Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/dts-v1/;
++
++#include <dt-bindings/input/input.h>
++#include "imx6ull.dtsi"
++
++/ {
++	model = "STYL i.MX6ULL 14x14 - Bigeye Gateway";
++	compatible = "fsl,imx6ull-14x14-evk", "fsl,imx6ull";
++
++	chosen {
++		stdout-path = &uart1;
++	};
++
++	memory {
++		reg = <0x80000000 0x20000000>;
++	};
++
++	reserved-memory {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		/* Default of all device drivers (common memory area) */
++		linux,cma {
++			compatible = "shared-dma-pool";
++			reusable;
++			size = <0x14000000>;
++			linux,cma-default;
++		};
++	};
++
++	peripheral_reset: peripheral_reset {
++		compatible = "reset-imx-cover";
++
++		/* Wifi or SD card controling */
++		sdiosw_en: sdiosw_en@0 {
++			gpios = <&gpio5 6 0>; 			/* MX6ULL_PAD_SNVS_TAMPER6__GPIO5_IO06 */
++			/* Switch SDIO_EN at low state => working => asserted value is 1 */
++			asserted-voltage = <1>;			/* line->asserted_voltage ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH */
++			delay-ms = <200>;
++			post-delay-ms = <100>;
++			auto;
++		};
++
++		sdiosw_in: sdiosw_in@1 {
++			gpios = <&gpio5 7 0>; 			/* MX6ULL_PAD_SNVS_TAMPER7__GPIO5_IO07 */
++			/* Switch SDIO_IN at low  state => support SD card ==> asserted value is 1 */
++			/* Switch SDIO_IN at higt state => support WIFI ==> asserted value is 0 */
++			asserted-voltage = <1>;			/* line->asserted_voltage ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH */
++			delay-ms = <200>;
++			auto;
++		};
++
++		bt_rst: bt_rst@2 {
++			gpios = <&gpio1 2 GPIO_ACTIVE_LOW>;  /*MX6UL_PAD_GPIO1_IO02__GPIO1_IO02*/ 
++			asserted-voltage = <0>;
++			delay-ms = <100>;
++			auto;
++		};             
++
++		sub1g_rst: sub1g_rst@3 {
++			gpios = <&gpio1 9 GPIO_ACTIVE_LOW>;  /*MX6UL_PAD_GPIO1_IO09__GPIO1_IO09*/ 
++			asserted-voltage = <0>;
++			delay-ms = <1000>;		
++			auto;
++		};
++
++		lora_rst: lora_rst@4 {
++			gpios = <&gpio4 13 GPIO_ACTIVE_LOW>;  /*MX6UL_PAD_NAND_CE0_B__GPIO4_IO13*/ 
++			asserted-voltage = <0>;
++			delay-ms = <100>;
++			auto;
++		};
++
++		/* ZTE dongle SE3620 power_on signal */
++		lte_usbhub: lte_usbhub@5 {
++			gpios = <&gpio1 18 GPIO_ACTIVE_LOW>;    		/* MX6UL_PAD_UART1_CTS_B__GPIO1_IO18 */
++			asserted-voltage = <0>;					/* line->asserted_voltage ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH */
++			/* To turn on the module the pad POWER_ON must be tied low for at least 2 seconds and then released. */
++			delay-ms = <2100>;						
++			post-delay-ms = <100>;					/* Milisecond waiting for reset completed */
++			auto;
++		};
++
++		/* ZTE USB interface SE3630 power_on and reset signal */
++		lte_pw: lte_pw@6 {
++			gpios = <&gpio1 1 GPIO_ACTIVE_LOW>;
++			asserted-voltage = <0>; 					/* line->asserted_value ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH */
++			delay-ms = <200>;						/* Milisecond hold for reset processing */
++			//post-delay-ms = <15000>;					/* Milisecond waiting for reset completed */
++			auto;
++		};
++
++		/*lte_rst: lte_rst@2 {
++			gpios = <&gpio1 0 GPIO_ACTIVE_HIGH>; 
++			asserted-voltage = <1>;
++			delay-ms = <200>;
++			auto;
++		};*/
++	};
++
++
++	leds: imx-leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_leds>;
++		status = "okay";
++
++		led-blue {
++			label = "led-blue";
++			gpios = <&gpio5 5 GPIO_ACTIVE_HIGH>; /* MX6ULL_PAD_SNVS_TAMPER5__GPIO5_IO05 */
++		};
++
++		led-green {
++			label = "led-green";
++			gpios = <&gpio5 4 GPIO_ACTIVE_HIGH>; /* MX6ULL_PAD_SNVS_TAMPER4__GPIO5_IO04 */
++		};
++
++		led-red {
++			label = "led-red";
++			gpios = <&gpio5 3 GPIO_ACTIVE_HIGH>; /* MX6ULL_PAD_SNVS_TAMPER3__GPIO5_IO03 */
++		};
++	};
++
++	regulators {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <0>;
++	};
++};
++
++&cpu0 {
++	/*
++	 * on i.MX6ULL, no seperated VDD_ARM_IN and VDD_SOC_IN,
++	 * to align with other platform and use the same cpufreq
++	 * driver, still use the seperated OPP define for arm
++	 * and soc.
++	 */
++	operating-points = <
++		/* kHz	uV */
++		528000	1175000
++		396000	1175000
++		198000	1175000
++	>;
++	fsl,soc-operating-points = <
++		/* KHz	uV */
++		528000	1175000
++		396000	1175000
++		198000	1175000
++	>;
++	fsl,arm-soc-shared = <1>;
++};
++
++&reg_arm {
++	vin-supply = <&sw1c_reg>;
++	regulator-allow-bypass;
++};
++
++&reg_soc {
++	vin-supply = <&sw1c_reg>;
++	regulator-allow-bypass;
++};
++
++&clks {
++	assigned-clocks = <&clks IMX6UL_CLK_PLL4_AUDIO_DIV>;
++	assigned-clock-rates = <786432000>;
++};
++
++&fec1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_enet1>;
++	phy-mode = "rmii";
++	phy-handle = <&ethphy0>;
++	status = "okay";
++
++	mdio {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		ethphy0: ethernet-phy@2 {
++			compatible = "ethernet-phy-ieee802.3-c22";
++			reg = <2>;
++		};
++
++		ethphy1: ethernet-phy@1 {
++			compatible = "ethernet-phy-ieee802.3-c22";
++			reg = <1>;
++		};
++	};
++};
++
++&fec2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_enet2>;
++	phy-mode = "rmii";
++	phy-handle = <&ethphy1>;
++	status = "disabled";
++};
++
++&gpc {
++	fsl,cpu_pupscr_sw2iso = <0x1>;
++	fsl,cpu_pupscr_sw = <0x0>;
++	fsl,cpu_pdnscr_iso2sw = <0x1>;
++	fsl,cpu_pdnscr_iso = <0x1>;
++	fsl,ldo-bypass = <0>; /* DCDC, ldo-enable */
++};
++
++&i2c1 {
++	clock-frequency = <100000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c1>;
++	status = "okay";
++
++	pmic: pfuze3000@08 {
++		compatible = "fsl,pfuze3000";
++		reg = <0x08>;
++
++		regulators {
++			sw1a_reg: sw1a {
++					regulator-min-microvolt = <700000>;
++					regulator-max-microvolt = <3300000>;
++					regulator-boot-on;
++					regulator-always-on;
++					regulator-ramp-delay = <6250>;
++			};
++
++			/* use sw1c_reg to align with pfuze100/pfuze200 */
++			sw1c_reg: sw1b {
++				regulator-min-microvolt = <700000>;
++				regulator-max-microvolt = <1475000>;
++				regulator-boot-on;
++				regulator-always-on;
++				regulator-ramp-delay = <6250>;
++			};
++
++			sw2_reg: sw2 {
++				regulator-min-microvolt = <2500000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			sw3a_reg: sw3 {
++				regulator-min-microvolt = <900000>;
++				regulator-max-microvolt = <1650000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			swbst_reg: swbst {
++				regulator-min-microvolt = <5000000>;
++				regulator-max-microvolt = <5150000>;
++			};
++
++			snvs_reg: vsnvs {
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <3000000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			vref_reg: vrefddr {
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			vgen1_reg: vldo1 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen2_reg: vldo2 {
++				regulator-min-microvolt = <800000>;
++				regulator-max-microvolt = <1550000>;
++				regulator-always-on;
++			};
++
++			vgen3_reg: vccsd {
++				regulator-min-microvolt = <2850000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen4_reg: v33 {
++				regulator-min-microvolt = <2850000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen5_reg: vldo3 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen6_reg: vldo4 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++		};
++	};
++};
++
++&i2c2 {
++	clock_frequency = <100000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c2>;
++	status = "okay";
++};
++
++&iomuxc {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_hog_1>;
++
++	pinctrl_hog_1: hoggrp-1 {
++		fsl,pins = <
++			/* SDIO SWITCH */
++			MX6ULL_PAD_SNVS_TAMPER6__GPIO5_IO06	0x1b0b0
++			MX6ULL_PAD_SNVS_TAMPER7__GPIO5_IO07	0x1b0b0
++
++			/* Bluetooth reset */
++			MX6UL_PAD_GPIO1_IO02__GPIO1_IO02	0x1b0b0
++			
++			/* Sub1Ghz reset */
++			MX6UL_PAD_GPIO1_IO09__GPIO1_IO09	0x1b0b0
++
++			/* Lora reset */
++			MX6UL_PAD_NAND_CE0_B__GPIO4_IO13	0x1b0b0
++
++			/* USB hub reset */
++			MX6UL_PAD_UART1_CTS_B__GPIO1_IO18	0x1b0b0
++
++			/* Poweron/off control pin for LTE module */
++			MX6UL_PAD_GPIO1_IO01__GPIO1_IO01	0x1b0b0
++
++			/* Reset control pin for LTE module */
++			MX6UL_PAD_GPIO1_IO00__GPIO1_IO00	0x1b0b0
++
++			/* Firmware update for Sub1Ghz */
++			MX6UL_PAD_GPIO1_IO08__GPIO1_IO08	0x1b0b0
++		>;
++	};
++
++	pinctrl_enet1: enet1grp {
++		fsl,pins = <
++			MX6UL_PAD_GPIO1_IO07__ENET1_MDC		0x1b0b0
++			MX6UL_PAD_GPIO1_IO06__ENET1_MDIO	0x1b0b0
++			MX6UL_PAD_ENET1_RX_EN__ENET1_RX_EN	0x1b0b0
++			MX6UL_PAD_ENET1_RX_ER__ENET1_RX_ER	0x1b0b0
++			MX6UL_PAD_ENET1_RX_DATA0__ENET1_RDATA00	0x1b0b0
++			MX6UL_PAD_ENET1_RX_DATA1__ENET1_RDATA01	0x1b0b0
++			MX6UL_PAD_ENET1_TX_EN__ENET1_TX_EN	0x1b0b0
++			MX6UL_PAD_ENET1_TX_DATA0__ENET1_TDATA00	0x1b0b0
++			MX6UL_PAD_ENET1_TX_DATA1__ENET1_TDATA01	0x1b0b0
++			MX6UL_PAD_ENET1_TX_CLK__ENET1_REF_CLK1	0x4001b031
++		>;
++	};
++
++	pinctrl_enet2: enet2grp {
++		fsl,pins = <
++			MX6UL_PAD_GPIO1_IO07__ENET2_MDC		0x1b0b0
++			MX6UL_PAD_GPIO1_IO06__ENET2_MDIO	0x1b0b0
++			MX6UL_PAD_ENET2_RX_EN__ENET2_RX_EN	0x1b0b0
++			MX6UL_PAD_ENET2_RX_ER__ENET2_RX_ER	0x1b0b0
++			MX6UL_PAD_ENET2_RX_DATA0__ENET2_RDATA00	0x1b0b0
++			MX6UL_PAD_ENET2_RX_DATA1__ENET2_RDATA01	0x1b0b0
++			MX6UL_PAD_ENET2_TX_EN__ENET2_TX_EN	0x1b0b0
++			MX6UL_PAD_ENET2_TX_DATA0__ENET2_TDATA00	0x1b0b0
++			MX6UL_PAD_ENET2_TX_DATA1__ENET2_TDATA01	0x1b0b0
++			MX6UL_PAD_ENET2_TX_CLK__ENET2_REF_CLK2	0x4001b031
++		>;
++	};
++
++	pinctrl_i2c1: i2c1grp {
++		fsl,pins = <
++			MX6UL_PAD_UART4_TX_DATA__I2C1_SCL 0x4001b8b0
++			MX6UL_PAD_UART4_RX_DATA__I2C1_SDA 0x4001b8b0
++		>;
++	};
++
++	pinctrl_i2c2: i2c2grp {
++		fsl,pins = <
++			MX6UL_PAD_UART5_TX_DATA__I2C2_SCL 0x4001b8b0
++			MX6UL_PAD_UART5_RX_DATA__I2C2_SDA 0x4001b8b0
++		>;
++	};
++
++	pinctrl_lcdif_dat: lcdifdatgrp {
++		fsl,pins = <
++			MX6UL_PAD_LCD_DATA00__LCDIF_DATA00  0x79
++			MX6UL_PAD_LCD_DATA01__LCDIF_DATA01  0x79
++			MX6UL_PAD_LCD_DATA02__LCDIF_DATA02  0x79
++			MX6UL_PAD_LCD_DATA03__LCDIF_DATA03  0x79
++			MX6UL_PAD_LCD_DATA04__LCDIF_DATA04  0x79
++			MX6UL_PAD_LCD_DATA05__LCDIF_DATA05  0x79
++			MX6UL_PAD_LCD_DATA06__LCDIF_DATA06  0x79
++			MX6UL_PAD_LCD_DATA07__LCDIF_DATA07  0x79
++			MX6UL_PAD_LCD_DATA08__LCDIF_DATA08  0x79
++			MX6UL_PAD_LCD_DATA09__LCDIF_DATA09  0x79
++			MX6UL_PAD_LCD_DATA10__LCDIF_DATA10  0x79
++			MX6UL_PAD_LCD_DATA11__LCDIF_DATA11  0x79
++			MX6UL_PAD_LCD_DATA12__LCDIF_DATA12  0x79
++			MX6UL_PAD_LCD_DATA13__LCDIF_DATA13  0x79
++			MX6UL_PAD_LCD_DATA14__LCDIF_DATA14  0x79
++			MX6UL_PAD_LCD_DATA15__LCDIF_DATA15  0x79
++			MX6UL_PAD_LCD_DATA16__LCDIF_DATA16  0x79
++			MX6UL_PAD_LCD_DATA17__LCDIF_DATA17  0x79
++			MX6UL_PAD_LCD_DATA18__LCDIF_DATA18  0x79
++			MX6UL_PAD_LCD_DATA19__LCDIF_DATA19  0x79
++			MX6UL_PAD_LCD_DATA20__LCDIF_DATA20  0x79
++			MX6UL_PAD_LCD_DATA21__LCDIF_DATA21  0x79
++			MX6UL_PAD_LCD_DATA22__LCDIF_DATA22  0x79
++			MX6UL_PAD_LCD_DATA23__LCDIF_DATA23  0x79
++		>;
++	};
++
++	pinctrl_lcdif_ctrl: lcdifctrlgrp {
++		fsl,pins = <
++			MX6UL_PAD_LCD_CLK__LCDIF_CLK	    0x79
++			MX6UL_PAD_LCD_ENABLE__LCDIF_ENABLE  0x79
++			MX6UL_PAD_LCD_HSYNC__LCDIF_HSYNC    0x79
++			MX6UL_PAD_LCD_VSYNC__LCDIF_VSYNC    0x79
++		>;
++	};
++
++	pinctrl_uart1: uart1grp {
++		fsl,pins = <
++			MX6UL_PAD_UART1_TX_DATA__UART1_DCE_TX 0x1b0b1
++			MX6UL_PAD_UART1_RX_DATA__UART1_DCE_RX 0x1b0b1
++		>;
++	};
++
++	pinctrl_uart2: uart2grp {
++		fsl,pins = <
++			MX6UL_PAD_UART2_TX_DATA__UART2_DCE_TX	0x1b0b1
++			MX6UL_PAD_UART2_RX_DATA__UART2_DCE_RX	0x1b0b1
++			MX6UL_PAD_UART3_RX_DATA__UART2_DCE_RTS	0x1b0b1
++			MX6UL_PAD_UART3_TX_DATA__UART2_DCE_CTS	0x1b0b1
++		>;
++	};
++
++	pinctrl_uart2dte: uart2dtegrp {
++		fsl,pins = <
++			MX6UL_PAD_UART2_TX_DATA__UART2_DTE_RX	0x1b0b1
++			MX6UL_PAD_UART2_RX_DATA__UART2_DTE_TX	0x1b0b1
++			MX6UL_PAD_UART3_RX_DATA__UART2_DTE_CTS	0x1b0b1
++			MX6UL_PAD_UART3_TX_DATA__UART2_DTE_RTS	0x1b0b1
++		>;
++	};
++
++	pinctrl_uart6: uart6grp {
++		fsl,pins = <
++			MX6UL_PAD_ENET2_RX_DATA0__UART6_DCE_TX	0x000010B1
++			MX6UL_PAD_ENET2_RX_DATA1__UART6_DCE_RX	0x000010B1
++		>;
++	};
++
++	pinctrl_uart7: uart7grp {
++		fsl,pins = <
++			MX6UL_PAD_ENET2_TX_DATA0__UART7_DTE_TX	0x000010B1
++			MX6UL_PAD_ENET2_RX_EN__UART7_DTE_RX	0x000010B1
++		>;
++	};
++		
++	pinctrl_usdhc1: usdhc1grp {
++		fsl,pins = <
++			MX6UL_PAD_SD1_CMD__USDHC1_CMD     0x17059
++			MX6UL_PAD_SD1_CLK__USDHC1_CLK     0x10071
++			MX6UL_PAD_SD1_DATA0__USDHC1_DATA0 0x17059
++			MX6UL_PAD_SD1_DATA1__USDHC1_DATA1 0x17059
++			MX6UL_PAD_SD1_DATA2__USDHC1_DATA2 0x17059
++			MX6UL_PAD_SD1_DATA3__USDHC1_DATA3 0x17059
++		>;
++	};
++
++	pinctrl_usdhc1_100mhz: usdhc1grp100mhz {
++		fsl,pins = <
++			MX6UL_PAD_SD1_CMD__USDHC1_CMD     0x170b9
++			MX6UL_PAD_SD1_CLK__USDHC1_CLK     0x100b9
++			MX6UL_PAD_SD1_DATA0__USDHC1_DATA0 0x170b9
++			MX6UL_PAD_SD1_DATA1__USDHC1_DATA1 0x170b9
++			MX6UL_PAD_SD1_DATA2__USDHC1_DATA2 0x170b9
++			MX6UL_PAD_SD1_DATA3__USDHC1_DATA3 0x170b9
++		>;
++	};
++
++	pinctrl_usdhc1_200mhz: usdhc1grp200mhz {
++		fsl,pins = <
++			MX6UL_PAD_SD1_CMD__USDHC1_CMD     0x170f9
++			MX6UL_PAD_SD1_CLK__USDHC1_CLK     0x100f9
++			MX6UL_PAD_SD1_DATA0__USDHC1_DATA0 0x170f9
++			MX6UL_PAD_SD1_DATA1__USDHC1_DATA1 0x170f9
++			MX6UL_PAD_SD1_DATA2__USDHC1_DATA2 0x170f9
++			MX6UL_PAD_SD1_DATA3__USDHC1_DATA3 0x170f9
++		>;
++	};
++
++	pinctrl_usdhc2: usdhc2grp {
++		fsl,pins = <
++			MX6UL_PAD_NAND_RE_B__USDHC2_CLK     0x10069
++			MX6UL_PAD_NAND_WE_B__USDHC2_CMD     0x17059
++			MX6UL_PAD_NAND_DATA00__USDHC2_DATA0 0x17059
++			MX6UL_PAD_NAND_DATA01__USDHC2_DATA1 0x17059
++			MX6UL_PAD_NAND_DATA02__USDHC2_DATA2 0x17059
++			MX6UL_PAD_NAND_DATA03__USDHC2_DATA3 0x17059
++		>;
++	};
++
++	pinctrl_usdhc2_8bit: usdhc2grp_8bit {
++		fsl,pins = <
++			MX6UL_PAD_NAND_RE_B__USDHC2_CLK     0x10069
++			MX6UL_PAD_NAND_WE_B__USDHC2_CMD     0x17059
++			MX6UL_PAD_NAND_DATA00__USDHC2_DATA0 0x17059
++			MX6UL_PAD_NAND_DATA01__USDHC2_DATA1 0x17059
++			MX6UL_PAD_NAND_DATA02__USDHC2_DATA2 0x17059
++			MX6UL_PAD_NAND_DATA03__USDHC2_DATA3 0x17059
++			MX6UL_PAD_NAND_DATA04__USDHC2_DATA4 0x17059
++			MX6UL_PAD_NAND_DATA05__USDHC2_DATA5 0x17059
++			MX6UL_PAD_NAND_DATA06__USDHC2_DATA6 0x17059
++			MX6UL_PAD_NAND_DATA07__USDHC2_DATA7 0x17059
++		>;
++	};
++
++	pinctrl_usdhc2_8bit_100mhz: usdhc2grp_8bit_100mhz {
++		fsl,pins = <
++			MX6UL_PAD_NAND_RE_B__USDHC2_CLK     0x100b9
++			MX6UL_PAD_NAND_WE_B__USDHC2_CMD     0x170b9
++			MX6UL_PAD_NAND_DATA00__USDHC2_DATA0 0x170b9
++			MX6UL_PAD_NAND_DATA01__USDHC2_DATA1 0x170b9
++			MX6UL_PAD_NAND_DATA02__USDHC2_DATA2 0x170b9
++			MX6UL_PAD_NAND_DATA03__USDHC2_DATA3 0x170b9
++			MX6UL_PAD_NAND_DATA04__USDHC2_DATA4 0x170b9
++			MX6UL_PAD_NAND_DATA05__USDHC2_DATA5 0x170b9
++			MX6UL_PAD_NAND_DATA06__USDHC2_DATA6 0x170b9
++			MX6UL_PAD_NAND_DATA07__USDHC2_DATA7 0x170b9
++		>;
++	};
++
++	pinctrl_usdhc2_8bit_200mhz: usdhc2grp_8bit_200mhz {
++		fsl,pins = <
++			MX6UL_PAD_NAND_RE_B__USDHC2_CLK     0x100f9
++			MX6UL_PAD_NAND_WE_B__USDHC2_CMD     0x170f9
++			MX6UL_PAD_NAND_DATA00__USDHC2_DATA0 0x170f9
++			MX6UL_PAD_NAND_DATA01__USDHC2_DATA1 0x170f9
++			MX6UL_PAD_NAND_DATA02__USDHC2_DATA2 0x170f9
++			MX6UL_PAD_NAND_DATA03__USDHC2_DATA3 0x170f9
++			MX6UL_PAD_NAND_DATA04__USDHC2_DATA4 0x170f9
++			MX6UL_PAD_NAND_DATA05__USDHC2_DATA5 0x170f9
++			MX6UL_PAD_NAND_DATA06__USDHC2_DATA6 0x170f9
++			MX6UL_PAD_NAND_DATA07__USDHC2_DATA7 0x170f9
++		>;
++	};
++
++	pinctrl_wdog: wdoggrp {
++		fsl,pins = <
++			MX6UL_PAD_LCD_RESET__WDOG1_WDOG_ANY    0x30b0
++		>;
++	};
++};
++
++&iomuxc_snvs {
++	pinctrl-names = "default_snvs";
++        /*pinctrl-0 = <&pinctrl_hog_2>;*/
++
++	imx6ul-bigeye {
++		pinctrl_hog_2: hoggrp-2 {
++			fsl,pins = <
++			>;
++		};
++
++		pinctrl_leds: ledsgrp {
++			fsl,pins = <
++			MX6ULL_PAD_SNVS_TAMPER3__GPIO5_IO03	0x80000000
++			MX6ULL_PAD_SNVS_TAMPER4__GPIO5_IO04	0x80000000
++			MX6ULL_PAD_SNVS_TAMPER5__GPIO5_IO05	0x80000000
++			>;
++		};
++	};
++};
++
++
++&lcdif {
++	pinctrl-names = "default";
++	pinctrl-0 = <	&pinctrl_lcdif_dat
++			&pinctrl_lcdif_ctrl>;
++	display = <&display0>;
++	status = "okay";
++
++	display0: display@0 {
++		bits-per-pixel = <16>;
++		bus-width = <24>;
++
++		display-timings {
++			native-mode = <&timing0>;
++			timing0: timing0 {
++			clock-frequency = <9200000>;
++			hactive = <480>;
++			vactive = <272>;
++			hfront-porch = <8>;
++			hback-porch = <4>;
++			hsync-len = <41>;
++			vback-porch = <2>;
++			vfront-porch = <4>;
++			vsync-len = <10>;
++
++			hsync-active = <0>;
++			vsync-active = <0>;
++			de-active = <1>;
++			pixelclk-active = <0>;
++			};
++		};
++	};
++};
++
++&pxp {
++	status = "okay";
++};
++
++&uart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart1>;
++	status = "okay";
++};
++
++&uart2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart2>;
++	fsl,uart-has-rtscts;
++	/* for DTE mode, add below change */
++	/* fsl,dte-mode; */
++	/* pinctrl-0 = <&pinctrl_uart2dte>; */
++	status = "okay";
++};
++
++&uart6 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart6>;
++	fsl,dce-mode; 
++	status = "okay";
++};
++
++&uart7 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart7>;
++	fsl,dte-mode; 
++	status = "okay";
++};
++
++&usbotg1 {
++	dr_mode = "otg";
++	srp-disable;
++	hnp-disable;
++	adp-disable;
++	status = "okay";
++};
++
++&usbotg2 {
++	dr_mode = "host";
++	disable-over-current;
++	status = "okay";
++};
++
++&usbphy1 {
++	tx-d-cal = <0x5>;
++};
++
++&usbphy2 {
++	tx-d-cal = <0x5>;
++};
++
++&usdhc1 {
++	pinctrl-names = "default", "state_100mhz", "state_200mhz";
++	pinctrl-0 = <&pinctrl_usdhc1>;
++	pinctrl-1 = <&pinctrl_usdhc1_100mhz>;
++	pinctrl-2 = <&pinctrl_usdhc1_200mhz>;
++	cd-gpios = <&gpio5 1 GPIO_ACTIVE_LOW>;
++	bus-width = <4>;
++	disable-wp;
++	no-1-8-v;
++	keep-power-in-suspend;
++	enable-sdio-wakeup;
++
++	status = "okay";
++};
++
++&usdhc2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc2>;
++	non-removable;
++	status = "okay";
++};
++
++&wdog1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_wdog>;
++	fsl,ext-reset-output;
++	status = "okay";
++};
+\ No newline at end of file
+diff --git a/drivers/net/wireless/ti/wl18xx/main.c b/drivers/net/wireless/ti/wl18xx/main.c
+index 5bdf7a0..9f98a1b 100644
+--- a/drivers/net/wireless/ti/wl18xx/main.c
++++ b/drivers/net/wireless/ti/wl18xx/main.c
+@@ -1405,8 +1405,10 @@ static int wl18xx_load_conf_file(struct device *dev, struct wlcore_conf *conf,
+ 	struct wlcore_conf_file *conf_file;
+ 	const struct firmware *fw;
+ 	int ret;
+-
+-	ret = request_firmware(&fw, file, dev);
++	
++	/* Modified here to avoid to long timeout when load firmware with userspace helper*/
++	/* ret = request_firmware(&fw, file, dev); */
++	ret = request_firmware_direct(&fw, file, dev);
+ 	if (ret < 0) {
+ 		wl1271_error("could not get configuration binary %s: %d",
+ 			     file, ret);
+diff --git a/drivers/reset/Kconfig b/drivers/reset/Kconfig
+index 155746d..ab32161 100644
+--- a/drivers/reset/Kconfig
++++ b/drivers/reset/Kconfig
+@@ -35,6 +35,14 @@ config RESET_GPIO
+ 	  This driver provides support for reset lines that are controlled
+ 	  directly by GPIOs.
+ 
++config RESET_IMX_COVER
++	tristate "GPIO reset controller via SYSFS interface support"
++        default y
++        depends on GPIOLIB && OF && SYSFS
++        help
++          This driver provides support for reset lines that are controlled
++          directly by GPIOs. It also support rootfs interface for reset control.
++
+ config RESET_LPC18XX
+ 	bool "LPC18xx/43xx Reset Driver" if COMPILE_TEST
+ 	default ARCH_LPC18XX
+diff --git a/drivers/reset/Makefile b/drivers/reset/Makefile
+index 391cad3..2453586 100644
+--- a/drivers/reset/Makefile
++++ b/drivers/reset/Makefile
+@@ -4,6 +4,7 @@ obj-$(CONFIG_ARCH_STI) += sti/
+ obj-$(CONFIG_RESET_ATH79) += reset-ath79.o
+ obj-$(CONFIG_RESET_BERLIN) += reset-berlin.o
+ obj-$(CONFIG_RESET_GPIO) += gpio-reset.o
++obj-$(CONFIG_RESET_IMX_COVER) += reset-imx-cover.o
+ obj-$(CONFIG_RESET_LPC18XX) += reset-lpc18xx.o
+ obj-$(CONFIG_RESET_MESON) += reset-meson.o
+ obj-$(CONFIG_RESET_OXNAS) += reset-oxnas.o
+diff --git a/drivers/reset/reset-imx-cover.c b/drivers/reset/reset-imx-cover.c
+new file mode 100644
+index 0000000..acbc4af
+--- /dev/null
++++ b/drivers/reset/reset-imx-cover.c
+@@ -0,0 +1,499 @@
++/*
++ * Copyright 2014 Parkeon - Martin Fuzzey <mfuzzey@parkeon.com>
++ * Copyright 2018 STYL Solutions - Alvin Nguyen <alvin.nguyen@styl.solutions>
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation.
++ *
++ * Driver allowing arbitary hardware to be reset by GPIO signals.
++ * The reset may be triggered in several ways:
++ *	At boot time (if configured in DT)
++ *	On userspace request via sysfs
++ *	By a driver using the reset controller framework
++ *
++ * The first two methods are supplied for devices on discoverable busses
++ * needing an external reset (eg some SDIO modules, USB hub chips)
++ */
++
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
++#include <linux/platform_device.h>
++#include <linux/reset-controller.h>
++#include <linux/slab.h>
++
++
++struct gpio_reset_priv;
++
++struct gpio_reset_line {
++	struct kobject kobj;
++	struct gpio_reset_priv *priv;
++	const char *name;
++	unsigned int gpio;
++	s32 asserted_voltage;
++	s32 delay_ms;
++	s32 post_delay_ms;
++
++#ifdef CONFIG_RESET_CONTROLLER
++	struct reset_controller_dev rcdev;
++#endif
++};
++#define kobj_to_gpio_reset_line(x) container_of(x, struct gpio_reset_line, kobj)
++
++
++struct gpio_reset_priv {
++	struct kref refcount;
++	struct device *dev;
++	int num_lines;
++	struct gpio_reset_line lines[];
++};
++
++struct gpio_reset_attribute {
++	struct attribute attr;
++	ssize_t (*show)(struct gpio_reset_line *line,
++				struct gpio_reset_attribute *attr, char *buf);
++	ssize_t (*store)(struct gpio_reset_line *line,
++				struct gpio_reset_attribute *attr,
++				const char *buf, size_t count);
++};
++#define to_gpio_reset_attr(x) container_of(x, struct gpio_reset_attribute, attr)
++
++
++static void gpio_reset_assert(struct gpio_reset_line *line)
++{
++	if (gpio_cansleep(line->gpio))
++		gpio_set_value_cansleep(line->gpio, line->asserted_voltage);
++	else
++		gpio_set_value(line->gpio, line->asserted_voltage);
++}
++
++static void gpio_reset_deassert(struct gpio_reset_line *line)
++{
++	if (gpio_cansleep(line->gpio))
++		gpio_set_value_cansleep(line->gpio, !line->asserted_voltage);
++	else
++		gpio_set_value(line->gpio, !line->asserted_voltage);
++}
++
++static void gpio_reset_reset(struct gpio_reset_line *line)
++{
++	if (line->delay_ms < 0)
++		return;
++
++	dev_info(line->priv->dev, "Resetting '%s' (%dms)", line->name, line->delay_ms);
++	gpio_reset_assert(line);
++
++	msleep(line->delay_ms);
++
++	gpio_reset_deassert(line);
++
++	if (line->post_delay_ms < 0)
++		return;
++
++	msleep(line->post_delay_ms);
++}
++
++
++static void gpio_reset_free_priv(struct kref *ref)
++{
++	struct gpio_reset_priv *priv = container_of(ref,
++					struct gpio_reset_priv, refcount);
++
++	kfree(priv);
++}
++
++static void gpio_reset_release_kobj(struct kobject *kobj)
++{
++	struct gpio_reset_line *line;
++
++	line = kobj_to_gpio_reset_line(kobj);
++
++	kref_put(&line->priv->refcount, gpio_reset_free_priv);
++}
++
++
++#ifdef CONFIG_SYSFS
++
++static ssize_t gpio_reset_attr_show(struct kobject *kobj,
++			     struct attribute *attr,
++			     char *buf)
++{
++	struct gpio_reset_attribute *attribute;
++	struct gpio_reset_line *line;
++
++	attribute = to_gpio_reset_attr(attr);
++	line = kobj_to_gpio_reset_line(kobj);
++
++	if (!attribute->show)
++		return -EIO;
++
++	return attribute->show(line, attribute, buf);
++}
++
++static ssize_t gpio_reset_attr_store(struct kobject *kobj,
++			      struct attribute *attr,
++			      const char *buf, size_t len)
++{
++	struct gpio_reset_attribute *attribute;
++	struct gpio_reset_line *line;
++
++	attribute = to_gpio_reset_attr(attr);
++	line = kobj_to_gpio_reset_line(kobj);
++
++	if (!attribute->store)
++		return -EIO;
++
++	return attribute->store(line, attribute, buf, len);
++}
++
++static ssize_t control_store(struct gpio_reset_line *line,
++	struct gpio_reset_attribute *attr, const char *buf, size_t count)
++{
++	char action[10];
++	char *eol;
++
++	strncpy(action, buf, min(count, sizeof(action)));
++	action[sizeof(action) - 1] = '\0';
++	eol = strrchr(action, '\n');
++	if (eol)
++		*eol = '\0';
++
++	if (!strcmp("reset", action))
++		gpio_reset_reset(line);
++	else if (!strcmp("assert", action))
++		gpio_reset_assert(line);
++	else if (!strcmp("deassert", action))
++		gpio_reset_deassert(line);
++	else
++		return -EINVAL;
++
++	return count;
++}
++
++static ssize_t delay_ms_show(struct gpio_reset_line *line,
++	struct gpio_reset_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d\n", line->delay_ms);
++}
++
++static ssize_t delay_ms_store(struct gpio_reset_line *line,
++	struct gpio_reset_attribute *attr, const char *buf, size_t count)
++{
++	if (sscanf(buf, "%u", &line->delay_ms) != 1)
++		return -EINVAL;
++
++	return count;
++}
++
++static ssize_t post_delay_ms_show(struct gpio_reset_line *line,
++	struct gpio_reset_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d\n", line->post_delay_ms);
++}
++
++static ssize_t post_delay_ms_store(struct gpio_reset_line *line,
++	struct gpio_reset_attribute *attr, const char *buf, size_t count)
++{
++	if (sscanf(buf, "%u", &line->post_delay_ms) != 1)
++		return -EINVAL;
++
++	return count;
++}
++
++static struct gpio_reset_attribute control_attribute = __ATTR_WO(control);
++static struct gpio_reset_attribute duration_attribute = __ATTR_RW(delay_ms);
++static struct gpio_reset_attribute waiting_attribute = __ATTR_RW(post_delay_ms);
++
++static struct attribute *gpio_reset_attrs[] = {
++	&control_attribute.attr,
++	&duration_attribute.attr,
++	&waiting_attribute.attr,
++	NULL
++};
++
++
++static const struct sysfs_ops gpio_reset_sysfs_ops = {
++	.show = gpio_reset_attr_show,
++	.store = gpio_reset_attr_store,
++};
++
++
++static struct kobj_type gpio_reset_ktype = {
++	.release = gpio_reset_release_kobj,
++	.sysfs_ops = &gpio_reset_sysfs_ops,
++	.default_attrs = gpio_reset_attrs,
++};
++
++static int gpio_reset_create_sysfs(struct gpio_reset_line *line)
++{
++	int ret;
++
++	ret = kobject_init_and_add(&line->kobj, &gpio_reset_ktype,
++		&line->priv->dev->kobj, "reset-%s", line->name);
++
++	kref_get(&line->priv->refcount); /* kobject part of private structure */
++
++	if (ret) {
++		kobject_put(&line->kobj);
++		return ret;
++	}
++
++	kobject_uevent(&line->kobj, KOBJ_ADD);
++
++	return 0;
++}
++
++static void gpio_reset_destroy_sysfs(struct gpio_reset_line *line)
++{
++	kobject_put(&line->kobj);
++}
++
++
++#else
++
++static int gpio_reset_create_sysfs(struct gpio_reset_line *line)
++{
++	return 0;
++}
++
++static void gpio_reset_destroy_sysfs(struct gpio_reset_line *line)
++{
++}
++
++#endif  /* CONFIG_SYSFS */
++
++
++#ifdef CONFIG_RESET_CONTROLLER
++#define rcdev_to_gpio_reset_line(x) \
++		container_of(x, struct gpio_reset_line, rcdev)
++
++static int gpio_reset_controller_assert(struct reset_controller_dev *rcdev,
++		unsigned long sw_reset_idx)
++{
++	struct gpio_reset_line *line =  rcdev_to_gpio_reset_line(rcdev);
++
++	gpio_reset_assert(line);
++
++	return 0;
++}
++
++static int gpio_reset_controller_deassert(struct reset_controller_dev *rcdev,
++		unsigned long sw_reset_idx)
++{
++	struct gpio_reset_line *line =  rcdev_to_gpio_reset_line(rcdev);
++
++	gpio_reset_deassert(line);
++
++	return 0;
++}
++
++static int gpio_reset_controller_reset(struct reset_controller_dev *rcdev,
++		unsigned long sw_reset_idx)
++{
++	struct gpio_reset_line *line =  rcdev_to_gpio_reset_line(rcdev);
++
++	gpio_reset_reset(line);
++
++	return 0;
++}
++
++static struct reset_control_ops gpio_reset_ops = {
++	.assert = gpio_reset_controller_assert,
++	.deassert = gpio_reset_controller_deassert,
++	.reset = gpio_reset_controller_reset,
++};
++
++
++int gpio_reset_nooarg_xlate(struct reset_controller_dev *rcdev,
++			  const struct of_phandle_args *reset_spec)
++{
++	if (WARN_ON(reset_spec->args_count != 0))
++		return -EINVAL;
++
++	return 0;
++}
++
++/* We register one controller per line rather than a single
++ * global controller so that drivers my directly reference the
++ * phandle of the gpio_reset subnode rather than having to know
++ * the index.
++ */
++static int gpio_reset_register_controller(
++	struct device_node *np,
++	struct gpio_reset_line *line)
++{
++	line->rcdev.of_node = np;
++	line->rcdev.nr_resets = 1;
++	line->rcdev.ops = &gpio_reset_ops;
++	line->rcdev.of_xlate = gpio_reset_nooarg_xlate;
++
++	return reset_controller_register(&line->rcdev);
++}
++
++static void gpio_reset_unregister_controller(struct gpio_reset_line *line)
++{
++	if (line->rcdev.nr_resets)
++		reset_controller_unregister(&line->rcdev);
++}
++
++#else
++
++static int gpio_reset_register_controller(
++	struct device_node *np,
++	struct gpio_reset_line *line)
++{
++	return 0;
++}
++
++static void gpio_reset_unregister_controller(struct gpio_reset_line *line)
++{
++}
++#endif  /* CONFIG_RESET_CONTROLLER */
++
++
++static int gpio_reset_init_line(
++	struct device_node *np,
++	struct gpio_reset_line *line)
++{
++	int ret;
++	struct device *dev = line->priv->dev;
++
++	line->name = np->name;
++
++	line->gpio = of_get_gpio(np, 0);
++	if (!gpio_is_valid(line->gpio)) {
++		dev_warn(dev, "Invalid reset gpio for '%s'", np->name);
++		return 0;
++	}
++
++	line->delay_ms 	    = 1;
++	line->post_delay_ms = 0;
++
++	of_property_read_u32(np, "asserted-voltage", &line->asserted_voltage);
++	of_property_read_u32(np, "delay-ms", &line->delay_ms);
++	of_property_read_u32(np, "post-delay-ms", &line->post_delay_ms);
++	
++	/* if assert value is high => init with low value and contra for assert value is low */
++	/* (assert value based on voltage level) */
++	ret = devm_gpio_request_one(dev, line->gpio,
++		line->asserted_voltage ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH,
++		line->name);
++	if (ret)
++		return ret;
++
++	ret = gpio_reset_create_sysfs(line);
++	if (ret)
++		return ret;
++
++	ret = gpio_reset_register_controller(np, line);
++	if (ret)
++		return ret;
++
++
++	if (of_property_read_bool(np, "auto"))
++		gpio_reset_reset(line);
++
++	return 0;
++}
++
++static void gpio_reset_free_line(struct gpio_reset_line *line)
++{
++	gpio_reset_destroy_sysfs(line);
++	gpio_reset_unregister_controller(line);
++}
++
++static int gpio_reset_probe(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node, *child;
++	struct gpio_reset_priv *priv;
++	struct gpio_reset_line *line;
++	int num_lines;
++	int ret;
++
++	num_lines = of_get_available_child_count(np);
++	if (!num_lines)
++		return -ENODEV;
++
++	for_each_available_child_of_node(np, child) {
++		ret = of_get_gpio(child, 0);
++		if (ret == -EPROBE_DEFER)
++			return ret;
++	}
++
++	priv = kzalloc(sizeof(*priv) + sizeof(*line) * num_lines, GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	kref_init(&priv->refcount);
++	priv->dev = &pdev->dev;
++	priv->num_lines = num_lines;
++
++	line = priv->lines;
++	for_each_available_child_of_node(np, child) {
++		line->priv = priv;
++		ret = gpio_reset_init_line(child, line);
++		if (ret)
++			goto rollback;
++		line++;
++	}
++
++	platform_set_drvdata(pdev, priv);
++
++	return 0;
++
++rollback:
++	while (line >= priv->lines)
++		gpio_reset_free_line(line--);
++
++	kref_put(&priv->refcount, gpio_reset_free_priv);
++
++	return ret;
++}
++
++static int gpio_reset_remove(struct platform_device *pdev)
++{
++	struct gpio_reset_priv *priv = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < priv->num_lines; i++)
++		gpio_reset_free_line(&priv->lines[i]);
++
++	kref_put(&priv->refcount, gpio_reset_free_priv);
++
++	return 0;
++}
++
++static const struct of_device_id gpio_reset_dt_ids[] = {
++	{ .compatible = "reset-imx-cover" },
++	{}
++};
++
++static struct platform_driver gpio_reset_driver = {
++	.probe		= gpio_reset_probe,
++	.remove		= gpio_reset_remove,
++	.driver		= {
++		.name	= "reset-imx-cover",
++		.owner	= THIS_MODULE,
++		.of_match_table = gpio_reset_dt_ids,
++	},
++};
++
++static int __init gpio_reset_init(void)
++{
++	return platform_driver_register(&gpio_reset_driver);
++}
++subsys_initcall(gpio_reset_init);
++
++static void __exit gpio_reset_exit(void)
++{
++	platform_driver_unregister(&gpio_reset_driver);
++}
++module_exit(gpio_reset_exit);
++
++MODULE_AUTHOR("Alvin Nguyen <alvin.nguyen@styl.solutions");
++MODULE_DESCRIPTION("GPIO reset controller");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 34d23cc..540873b 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1421,6 +1421,12 @@ static int acm_probe(struct usb_interface *intf,
+ 				usb_sndbulkpipe(usb_dev, epwrite->bEndpointAddress),
+ 				NULL, acm->writesize, acm_write_bulk, snd);
+ 		snd->urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
++		
++		#if 1 //Added by Quectel for zero packet
++		if (usb_dev->descriptor.idVendor == 0x1519 && usb_dev->descriptor.idProduct == 0x0020)
++			snd->urb->transfer_flags |= URB_ZERO_PACKET;
++		#endif
++
+ 		if (quirks & SEND_ZERO_PACKET)
+ 			snd->urb->transfer_flags |= URB_ZERO_PACKET;
+ 		snd->instance = acm;
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 1799aa0..8a45c6d 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -232,18 +232,19 @@ static int  option_probe(struct usb_serial *serial,
+ #define BANDRICH_PRODUCT_1011			0x1011
+ #define BANDRICH_PRODUCT_1012			0x1012
+ 
+-#define QUALCOMM_VENDOR_ID			0x05C6
++#define QUALCOMM_VENDOR_ID                      0x05C6
+ /* These Quectel products use Qualcomm's vendor ID */
+ #define QUECTEL_PRODUCT_UC20			0x9003
+ #define QUECTEL_PRODUCT_UC15			0x9090
+ /* These Yuga products use Qualcomm's vendor ID */
+ #define YUGA_PRODUCT_CLM920_NC5			0x9625
+ 
+-#define QUECTEL_VENDOR_ID			0x2c7c
++#define QUECTEL_VENDOR_ID                       0x2c7c
+ /* These Quectel products use Quectel's vendor ID */
+ #define QUECTEL_PRODUCT_EC21			0x0121
+ #define QUECTEL_PRODUCT_EC25			0x0125
+ #define QUECTEL_PRODUCT_BG96			0x0296
++#define QUECTEL_PRODUCT_EG95      		0x0195
+ 
+ #define CMOTECH_VENDOR_ID			0x16d8
+ #define CMOTECH_PRODUCT_6001			0x6001
+@@ -301,10 +302,11 @@ static int  option_probe(struct usb_serial *serial,
+ #define ZTE_PRODUCT_MF622			0x0001
+ #define ZTE_PRODUCT_MF628			0x0015
+ #define ZTE_PRODUCT_MF626			0x0031
+-#define ZTE_PRODUCT_ZM8620_X			0x0396
+-#define ZTE_PRODUCT_ME3620_MBIM			0x0426
+-#define ZTE_PRODUCT_ME3620_X			0x1432
+-#define ZTE_PRODUCT_ME3620_L			0x1433
++#define ZTE_PRODUCT_ZM8620_X                    0x0396
++#define ZTE_PRODUCT_ME3620_MBIM                 0x0426
++#define ZTE_PRODUCT_ME3620_X                    0x1432
++#define ZTE_PRODUCT_ME3620_L                    0x1433
++#define ZTE_PRODUCT_ME3630                      0x1476
+ #define ZTE_PRODUCT_AC2726			0xfff1
+ #define ZTE_PRODUCT_MG880			0xfffd
+ #define ZTE_PRODUCT_CDMA_TECH			0xfffe
+@@ -600,6 +602,10 @@ struct option_blacklist_info {
+ 	.reserved = BIT(3) | BIT(4) | BIT(5),
+ };
+ 
++static const struct option_blacklist_info zte_me3630_blacklist = {
++        .reserved = BIT(3) | BIT(4) | BIT(5),
++};
++
+ static const struct option_blacklist_info zte_zm8620_x_blacklist = {
+ 	.reserved = BIT(3) | BIT(4) | BIT(5),
+ };
+@@ -1206,6 +1212,8 @@ struct option_blacklist_info {
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(QUECTEL_VENDOR_ID, QUECTEL_PRODUCT_BG96),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++        { USB_DEVICE(QUECTEL_VENDOR_ID, QUECTEL_PRODUCT_EG95),
++          .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6001) },
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CMU_300) },
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6003),
+@@ -1855,6 +1863,8 @@ struct option_blacklist_info {
+ 	 .driver_info = (kernel_ulong_t)&zte_me3620_mbim_blacklist },
+ 	{ USB_DEVICE(ZTE_VENDOR_ID, ZTE_PRODUCT_ME3620_X),
+ 	 .driver_info = (kernel_ulong_t)&zte_me3620_xl_blacklist },
++        { USB_DEVICE(ZTE_VENDOR_ID, ZTE_PRODUCT_ME3630),
++         .driver_info = (kernel_ulong_t)&zte_me3630_blacklist },
+ 	{ USB_DEVICE(ZTE_VENDOR_ID, ZTE_PRODUCT_ZM8620_X),
+ 	 .driver_info = (kernel_ulong_t)&zte_zm8620_x_blacklist },
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x01) },
+@@ -2099,6 +2109,9 @@ struct option_blacklist_info {
+ #ifdef CONFIG_PM
+ 	.suspend           = usb_wwan_suspend,
+ 	.resume            = usb_wwan_resume,
++  #if 1 //Added by Quectel
++  .reset_resume = usb_wwan_resume,
++  #endif
+ #endif
+ };
+ 
+diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
+index 3dfdfc8..1054635c 100644
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -505,6 +505,21 @@ static struct urb *usb_wwan_setup_urb(struct usb_serial_port *port,
+ 			  usb_sndbulkpipe(serial->dev, endpoint) | dir,
+ 			  buf, len, callback, ctx);
+ 
++	#if 1
++	//Added by Quectel for zero packet
++	if (dir == USB_DIR_OUT) {
++	struct usb_device_descriptor *desc = &serial->dev->descriptor;
++	if (desc->idVendor == cpu_to_le16(0x05C6) && desc->idProduct == cpu_to_le16(0x9090))
++	urb->transfer_flags |= URB_ZERO_PACKET;
++	if (desc->idVendor == cpu_to_le16(0x05C6) && desc->idProduct == cpu_to_le16(0x9003))
++	urb->transfer_flags |= URB_ZERO_PACKET;
++	if (desc->idVendor == cpu_to_le16(0x05C6) && desc->idProduct == cpu_to_le16(0x9215))
++	urb->transfer_flags |= URB_ZERO_PACKET;
++	if (desc->idVendor == cpu_to_le16(0x2C7C))
++	urb->transfer_flags |= URB_ZERO_PACKET;
++	}
++	#endif
++
+ 	return urb;
+ }
+ 

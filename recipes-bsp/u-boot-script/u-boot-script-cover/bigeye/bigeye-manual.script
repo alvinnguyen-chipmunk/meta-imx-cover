@@ -1,0 +1,132 @@
+setenv _bscriptver "v1.0.0"
+
+setenv autoload 'no'
+
+setenv smp 'nosmp'
+setenv kernel_addr 	0x80800000
+setenv dtb_addr		0x83800000
+
+setenv hello 'echo STYL Bigeye i.MX6ULL - Booting from manual runtime override script...'
+
+if test -z "${src_dev}" ; then
+	setenv src_dev 0
+fi
+
+if test -z "${src_par}" ; then
+	setenv src_par 1
+fi
+
+if test -z "${gpio_cmd}" ; then
+	setenv gpio_cmd ''
+fi
+
+if test -z "${video}" ; then
+	setenv video  'mxcfb0:dev=ldb,LDB-VGA,if=RGB666,bpp=32'
+	#setenv video 'mxc_elcdif_fb:800x480M,bpp=16'
+	#setenv video 'mxsfb:800x480M-16@60'
+fi
+
+if test -z "${console}" ; then
+	setenv console 'ttymxc0'
+fi
+
+if test -z "${baudrate}" ; then
+	setenv baudrate '115200'
+fi
+
+if test -z "${kernel_name}" ; then
+	setenv kernel_name 'zImage'
+fi
+
+if test -z "${dtb_name}" ; then
+	setenv dtb_name 'imx6ull-14x14-bigeye-wifi.dtb'
+fi
+
+if test -z "${mmcroot}" ; then
+	setenv mmcroot '/dev/mmcblk1p2 rootfstype=ext4 rootwait rw x11=false'
+fi
+
+if test -z "${ethaddr}" ; then
+	setenv ethaddr '06:d7:af:f2:35:a7'
+fi
+
+if test -z "${serverip}" ; then
+	setenv serverip '192.168.100.112'
+fi
+
+if test -z "${bootapp}" ; then
+	setenv bootapp	'bootz'
+fi
+
+if test -z "${debug}" ; then
+	setenv debug	'no'
+fi
+
+if test -z "${enable_netboot}" ; then
+	setenv enable_netboot	'yes'
+fi
+
+setenv dtb_download    'tftpboot ${dtb_addr} ${dtb_name}'
+setenv kernel_download 'tftpboot ${kernel_addr} ${kernel_name}'
+
+setenv dtb_load        'fatload mmc ${src_dev}:${src_par} ${dtb_addr}    ${dtb_name}'
+setenv kernel_load     'fatload mmc ${src_dev}:${src_par} ${kernel_addr} ${kernel_name}'
+
+setenv bootargs 'setenv bootargs console=${console},${baudrate} init=/lib/systemd/systemd ${smp} root=${mmcroot} ${video_b} vt.global_cursor_default=0 consoleblank=0'
+
+setenv bootcmd '${bootapp} ${kernel_addr} - ${dtb_addr}'
+
+if itest.s "x${debug}" == "xyes"; then
+
+	echo "############ STYL Bigeye Gateway Bootscript ${_bscriptver} ####################################"
+	echo "Options: "
+	echo "    console       :       debug console interface files. (ttymxc0)"
+	echo "    baudrate      :       speed of debug console interface files. (115200)"
+	echo "    kernel_name   :       kernel image name. (zImage)"
+	echo "    dtb_name      :       kernel DTS name. (imx6ull-14x14-bigeye-wifi.dtb)"
+	echo "    src_dev       :       Device to load image files. (0)"
+	echo "    src_par       :       Partition to load image files. (1)"
+	echo "    mmcroot       :       root files system. (/dev/mmcblk1p2 rootfstype=ext4 rootwait rw x11=false)"
+	echo "    video         :       video interface configure. (video=mxcfb0:dev=ldb,LDB-VGA,if=RGB666,bpp=32)"
+	echo "    gpio_cmd      :       GPIO command for workaround. (null)"
+	echo "    enable_netboot:       Enable NET boot. Only check for yes/no value. (yes)"
+	echo "    bootapp       :       Boot application. (bootz)"
+	echo "    ethaddr       :       MAC address for ethernet. (06:d7:af:f2:35:a7)"
+	echo "    serverip      :       Server address for netboot. (192.168.100.112)"
+	echo "    debug         :       Show all environment before boot. Only check for yes/no value. (no)"
+	echo "###############################################################################################"
+
+	echo " "
+	echo "################ Current environment lists ####################################################"
+	printenv
+	echo "###############################################################################################"
+	echo " "
+	sleep 3
+fi
+
+if itest.s "x${enable_netboot}" == "xyes"; then
+	run hello
+	run gpio_cmd
+	dhcp
+	if run kernel_download; then
+		if run dtb_download; then
+			run bootargs;
+			run bootcmd;
+		else
+			echo "ERROR! Can not load DTS file."
+		fi;
+	else
+		echo "ERROR! Can not load kernel image."
+	fi
+else
+	if run kernel_load; then
+		if run dtb_load; then
+			run bootargs;
+			run bootcmd;
+		else
+			echo "ERROR! Can not load DTS file."
+		fi;
+	else
+		echo "ERROR! Can not load kernel image."
+	fi
+fi

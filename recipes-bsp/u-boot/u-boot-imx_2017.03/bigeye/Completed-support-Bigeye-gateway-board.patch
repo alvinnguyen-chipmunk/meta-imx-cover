@@ -1,163 +1,3 @@
-From 66d9872058b2446986d3017edbf4c4d9d6c7686d Mon Sep 17 00:00:00 2001
-From: Alvin Nguyen <alvin.nguyen@styl.solutions>
-Date: Wed, 1 Aug 2018 10:49:18 +0700
-Subject: [PATCH] Completed support Bigeye gateway board
-
-- Ethernet was worked
-- MMC, SDCARD were worked
-- PMIC was enabled
-- Secureboot was enabled (stop and delay)
-- WDT was enabled
-- eMMC/SD/Net boot were worked
-- MMC/Net/Boot commands were supprted
-- Separated and clean for DTS, C source/header files, defconfig, Kconfig
-- Updated documents
-- ...
-
-Signed-off-by: Alvin Nguyen <alvin.nguyen@styl.solutions>
----
- arch/arm/cpu/armv7/mx6/Kconfig              |   8 +
- arch/arm/dts/Makefile                       |   1 +
- arch/arm/dts/imx6ull-14x14-bigeye.dts       | 541 ++++++++++++++++
- board/styl/bigeye/Kconfig                   |  20 +
- board/styl/bigeye/MAINTAINERS               |   7 +
- board/styl/bigeye/Makefile                  |   6 +
- board/styl/bigeye/README                    |  18 +
- board/styl/bigeye/imximage.cfg              | 123 ++++
- board/styl/bigeye/mx6ull-bigeye.c           | 351 ++++++++++
- board/styl/bigeye/plugin.S                  | 147 +++++
- board/styl/common/Kconfig                   |  16 +
- board/styl/common/Makefile                  |  91 +++
- board/styl/common/arm_sleep.c               | 130 ++++
- board/styl/common/cadmus.c                  |  79 +++
- board/styl/common/cadmus.h                  |  38 ++
- board/styl/common/cds_pci_ft.c              |  76 +++
- board/styl/common/cds_via.c                 |  93 +++
- board/styl/common/cmd_esbc_validate.c       |  84 +++
- board/styl/common/dcu_sii9022a.c            | 153 +++++
- board/styl/common/dcu_sii9022a.h            |  13 +
- board/styl/common/diu_ch7301.c              | 136 ++++
- board/styl/common/diu_ch7301.h              |  13 +
- board/styl/common/eeprom.h                  |  34 +
- board/styl/common/epdc_setup.c              | 219 +++++++
- board/styl/common/fman.c                    |  90 +++
- board/styl/common/fman.h                    |  15 +
- board/styl/common/fsl_chain_of_trust.c      | 158 +++++
- board/styl/common/fsl_validate.c            | 903 ++++++++++++++++++++++++++
- board/styl/common/ics307_clk.c              | 146 +++++
- board/styl/common/ics307_clk.h              |  16 +
- board/styl/common/idt8t49n222a_serdes_clk.c | 207 ++++++
- board/styl/common/idt8t49n222a_serdes_clk.h | 107 ++++
- board/styl/common/ls102xa_stream_id.c       |  36 ++
- board/styl/common/mc34vr500.c               |  95 +++
- board/styl/common/mmc.c                     |  48 ++
- board/styl/common/mpc85xx_sleep.c           |  96 +++
- board/styl/common/ngpixis.c                 | 250 ++++++++
- board/styl/common/ngpixis.h                 |  61 ++
- board/styl/common/ns_access.c               |  70 ++
- board/styl/common/p_corenet/Makefile        |  10 +
- board/styl/common/p_corenet/law.c           |  37 ++
- board/styl/common/p_corenet/pci.c           |  23 +
- board/styl/common/p_corenet/tlb.c           | 161 +++++
- board/styl/common/pfuze.c                   |  93 +++
- board/styl/common/pfuze.h                   |  20 +
- board/styl/common/pfuze_dm.c                |  89 +++
- board/styl/common/pixis.c                   | 542 ++++++++++++++++
- board/styl/common/pixis.h                   | 166 +++++
- board/styl/common/pq-mds-pib.c              | 102 +++
- board/styl/common/pq-mds-pib.h              |   9 +
- board/styl/common/qixis.c                   | 307 +++++++++
- board/styl/common/qixis.h                   | 137 ++++
- board/styl/common/recovery_keypad.c         |  60 ++
- board/styl/common/recovery_keypad.h         |  13 +
- board/styl/common/sdhc_boot.c               |  76 +++
- board/styl/common/sgmii_riser.c             | 129 ++++
- board/styl/common/sgmii_riser.h             |  16 +
- board/styl/common/sleep.h                   |  21 +
- board/styl/common/spl.h                     |  13 +
- board/styl/common/sys_eeprom.c              | 543 ++++++++++++++++
- board/styl/common/tcpc.c                    | 953 ++++++++++++++++++++++++++++
- board/styl/common/tcpc.h                    | 448 +++++++++++++
- board/styl/common/via.h                     |  18 +
- board/styl/common/vid.c                     | 547 ++++++++++++++++
- board/styl/common/vid.h                     |  24 +
- board/styl/common/vsc3316_3308.c            | 276 ++++++++
- board/styl/common/vsc3316_3308.h            |  25 +
- board/styl/common/zm7300.c                  | 233 +++++++
- board/styl/common/zm7300.h                  |  22 +
- configs/mx6ull_14x14_bigeye_defconfig       | 923 +++++++++++++++++++++++++++
- include/configs/mx6ull-bigeye.h             | 244 +++++++
- 71 files changed, 10975 insertions(+)
- create mode 100644 arch/arm/dts/imx6ull-14x14-bigeye.dts
- create mode 100644 board/styl/bigeye/Kconfig
- create mode 100644 board/styl/bigeye/MAINTAINERS
- create mode 100644 board/styl/bigeye/Makefile
- create mode 100644 board/styl/bigeye/README
- create mode 100644 board/styl/bigeye/imximage.cfg
- create mode 100644 board/styl/bigeye/mx6ull-bigeye.c
- create mode 100644 board/styl/bigeye/plugin.S
- create mode 100644 board/styl/common/Kconfig
- create mode 100644 board/styl/common/Makefile
- create mode 100644 board/styl/common/arm_sleep.c
- create mode 100644 board/styl/common/cadmus.c
- create mode 100644 board/styl/common/cadmus.h
- create mode 100644 board/styl/common/cds_pci_ft.c
- create mode 100644 board/styl/common/cds_via.c
- create mode 100644 board/styl/common/cmd_esbc_validate.c
- create mode 100644 board/styl/common/dcu_sii9022a.c
- create mode 100644 board/styl/common/dcu_sii9022a.h
- create mode 100644 board/styl/common/diu_ch7301.c
- create mode 100644 board/styl/common/diu_ch7301.h
- create mode 100644 board/styl/common/eeprom.h
- create mode 100644 board/styl/common/epdc_setup.c
- create mode 100644 board/styl/common/fman.c
- create mode 100644 board/styl/common/fman.h
- create mode 100644 board/styl/common/fsl_chain_of_trust.c
- create mode 100644 board/styl/common/fsl_validate.c
- create mode 100644 board/styl/common/ics307_clk.c
- create mode 100644 board/styl/common/ics307_clk.h
- create mode 100644 board/styl/common/idt8t49n222a_serdes_clk.c
- create mode 100644 board/styl/common/idt8t49n222a_serdes_clk.h
- create mode 100644 board/styl/common/ls102xa_stream_id.c
- create mode 100644 board/styl/common/mc34vr500.c
- create mode 100644 board/styl/common/mmc.c
- create mode 100644 board/styl/common/mpc85xx_sleep.c
- create mode 100644 board/styl/common/ngpixis.c
- create mode 100644 board/styl/common/ngpixis.h
- create mode 100644 board/styl/common/ns_access.c
- create mode 100644 board/styl/common/p_corenet/Makefile
- create mode 100644 board/styl/common/p_corenet/law.c
- create mode 100644 board/styl/common/p_corenet/pci.c
- create mode 100644 board/styl/common/p_corenet/tlb.c
- create mode 100644 board/styl/common/pfuze.c
- create mode 100644 board/styl/common/pfuze.h
- create mode 100644 board/styl/common/pfuze_dm.c
- create mode 100644 board/styl/common/pixis.c
- create mode 100644 board/styl/common/pixis.h
- create mode 100644 board/styl/common/pq-mds-pib.c
- create mode 100644 board/styl/common/pq-mds-pib.h
- create mode 100644 board/styl/common/qixis.c
- create mode 100644 board/styl/common/qixis.h
- create mode 100644 board/styl/common/recovery_keypad.c
- create mode 100644 board/styl/common/recovery_keypad.h
- create mode 100644 board/styl/common/sdhc_boot.c
- create mode 100644 board/styl/common/sgmii_riser.c
- create mode 100644 board/styl/common/sgmii_riser.h
- create mode 100644 board/styl/common/sleep.h
- create mode 100644 board/styl/common/spl.h
- create mode 100644 board/styl/common/sys_eeprom.c
- create mode 100644 board/styl/common/tcpc.c
- create mode 100644 board/styl/common/tcpc.h
- create mode 100644 board/styl/common/via.h
- create mode 100644 board/styl/common/vid.c
- create mode 100644 board/styl/common/vid.h
- create mode 100644 board/styl/common/vsc3316_3308.c
- create mode 100644 board/styl/common/vsc3316_3308.h
- create mode 100644 board/styl/common/zm7300.c
- create mode 100644 board/styl/common/zm7300.h
- create mode 100644 configs/mx6ull_14x14_bigeye_defconfig
- create mode 100644 include/configs/mx6ull-bigeye.h
-
 diff --git a/arch/arm/cpu/armv7/mx6/Kconfig b/arch/arm/cpu/armv7/mx6/Kconfig
 index be9f2b9..9e7f818 100644
 --- a/arch/arm/cpu/armv7/mx6/Kconfig
@@ -198,12 +38,12 @@ index afd1a5b..bf4f036 100644
  	imx6sll-lpddr2-arm2.dtb \
 diff --git a/arch/arm/dts/imx6ull-14x14-bigeye.dts b/arch/arm/dts/imx6ull-14x14-bigeye.dts
 new file mode 100644
-index 0000000..e15a73f
+index 0000000..15c4cf7
 --- /dev/null
 +++ b/arch/arm/dts/imx6ull-14x14-bigeye.dts
 @@ -0,0 +1,541 @@
 +/*
-+ * Copyright (C) 2016 Freescale Semiconductor, Inc.
++ * Copyright (C) 2018 STYL Solutions Pte. Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -11329,10 +11169,10 @@ index 0000000..4ca7872
 +# CONFIG_UNIT_TEST is not set
 diff --git a/include/configs/mx6ull-bigeye.h b/include/configs/mx6ull-bigeye.h
 new file mode 100644
-index 0000000..e2cf535
+index 0000000..77a9165
 --- /dev/null
 +++ b/include/configs/mx6ull-bigeye.h
-@@ -0,0 +1,244 @@
+@@ -0,0 +1,175 @@
 +/*
 + * Copyright (C) 2016 Freescale Semiconductor, Inc.
 + * Copyright 2017-2018 NXP
@@ -11398,90 +11238,21 @@ index 0000000..e2cf535
 +
 +#define CONFIG_EXTRA_ENV_SETTINGS \
 +	"script=boot.scr\0" \
-+	"image=zImage\0" \
 +	"console=ttymxc0\0" \
-+	"fdt_high=0xffffffff\0" \
-+	"initrd_high=0xffffffff\0" \
-+	"fdt_file=undefined\0" \
-+	"fdt_addr=0x83000000\0" \
-+	"boot_fdt=try\0" \
-+	"ip_dyn=yes\0" \
-+	"mmcdev="__stringify(CONFIG_SYS_MMC_ENV_DEV)"\0" \
-+	"mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
-+	"mmcroot=" CONFIG_MMCROOT " rootwait rw\0" \
-+	"mmcautodetect=yes\0" \
-+	"mmcargs=setenv bootargs console=${console},${baudrate} " \
-+		BOOTARGS_CMA_SIZE \
-+		"root=${mmcroot}\0" \
++        "mmcdev="__stringify(CONFIG_SYS_MMC_ENV_DEV)"\0" \
++        "mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
 +	"loadbootscript=" \
 +		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
 +	"bootscript=echo Running bootscript from mmc ...; " \
 +		"source\0" \
-+	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
-+	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
-+	"mmcboot=echo Booting from mmc ...; " \
-+		"run mmcargs; " \
-+		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
-+			"if run loadfdt; then " \
-+				"bootz ${loadaddr} - ${fdt_addr}; " \
-+			"else " \
-+				"if test ${boot_fdt} = try; then " \
-+					"bootz; " \
-+				"else " \
-+					"echo WARN: Cannot load the DT; " \
-+				"fi; " \
-+			"fi; " \
-+		"else " \
-+			"bootz; " \
-+		"fi;\0" \
-+	"netargs=setenv bootargs console=${console},${baudrate} " \
-+		BOOTARGS_CMA_SIZE \
-+		"root=/dev/nfs " \
-+	"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
-+		"netboot=echo Booting from net ...; " \
-+		"run netargs; " \
-+		"if test ${ip_dyn} = yes; then " \
-+			"setenv get_cmd dhcp; " \
-+		"else " \
-+			"setenv get_cmd tftp; " \
-+		"fi; " \
-+		"${get_cmd} ${image}; " \
-+		"if test ${tee} = yes; then " \
-+			"${get_cmd} ${tee_addr} ${tee_file}; " \
-+			"${get_cmd} ${fdt_addr} ${fdt_file}; " \
-+			"bootm ${tee_addr} - ${fdt_addr}; " \
-+		"else " \
-+			"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
-+				"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
-+					"bootz ${loadaddr} - ${fdt_addr}; " \
-+				"else " \
-+					"if test ${boot_fdt} = try; then " \
-+						"bootz; " \
-+					"else " \
-+						"echo WARN: Cannot load the DT; " \
-+					"fi; " \
-+				"fi; " \
-+			"else " \
-+				"bootz; " \
-+			"fi; " \
-+		"fi;\0" \
-+		"findfdt="\
-+			"if test $fdt_file = undefined; then " \
-+					"setenv fdt_file imx6ull-14x14-bigeye.dtb; fi;\0"\
 +
 +#define CONFIG_BOOTCOMMAND \
-+	   "run findfdt;" \
 +	   "mmc dev ${mmcdev};" \
 +	   "mmc dev ${mmcdev}; if mmc rescan; then " \
 +		   "if run loadbootscript; then " \
 +			   "run bootscript; " \
-+		   "else " \
-+			   "if run loadimage; then " \
-+				   "run mmcboot; " \
-+			   "else run netboot; " \
-+			   "fi; " \
 +		   "fi; " \
-+	   "else run netboot; fi"
++	   "fi"
 +
 +/* Miscellaneous configurable options */
 +#define CONFIG_SYS_MEMTEST_START	0x80000000
@@ -11577,6 +11348,3 @@ index 0000000..e2cf535
 +#define CONFIG_BOOT_RETRY_TIME		60	/* retry after 60 secs */
 +
 +#endif
--- 
-1.9.1
-

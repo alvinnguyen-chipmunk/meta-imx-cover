@@ -11,25 +11,28 @@ inherit populate_sdk_qt5
 
 # NetworkManager and relate packages
 IMAGE_INSTALL_append = "\
-	networkmanager 	\
-	modemmanager 	\
-	mobile-broadband-provider-info \
-	util-linux 	\
-	usbutils 	\
-	usb-modeswitch 	\
-	ppp 		\
-	net-tools 	\
+        networkmanager 	\
+        modemmanager 	\
+        mobile-broadband-provider-info \
+        util-linux 	\
+        usbutils 	\
+        usb-modeswitch 	\
+        ppp 		\
+        net-tools 	\
 "
 
 # SSH and SFTP server
 IMAGE_INSTALL_append = " openssh openssh-sftp-server"
 
 # Qt support
-#IMAGE_INSTALL += "packagegroup-qt5-full qtbase"
+IMAGE_INSTALL_append = " packagegroup-qt5-full qtbase"
 
-#IMAGE_INSTALL += "ttf-dejavu-common ttf-dejavu-sans ttf-dejavu-sans-condensed ttf-dejavu-sans-mono ttf-dejavu-serif python  ttf-dejavu-serif-condensed"
+IMAGE_INSTALL_append = " ttf-dejavu-common ttf-dejavu-sans ttf-dejavu-sans-condensed ttf-dejavu-sans-mono ttf-dejavu-serif python  ttf-dejavu-serif-condensed"
 
-#IMAGE_INSTALL_remove = " qtwayland"
+IMAGE_INSTALL_remove = " qtwayland"
+
+# qtcreator debug
+IMAGE_INSTALL_append = " packagegroup-qt5-qtcreator-debug"
 
 # GDB support
 IMAGE_INSTALL_append = " gdb gdbserver"
@@ -38,7 +41,7 @@ IMAGE_INSTALL_append = " gdb gdbserver"
 IMAGE_INSTALL_append = " tzdata tzdata-asia tzdata-europe"
 
 # Utilities
-IMAGE_INSTALL_append = " picocom resolvconf bash-completion wget icu fbset"
+IMAGE_INSTALL_append = " picocom resolvconf bash-completion wget icu fbset minicom"
 IMAGE_INSTALL_append = " rsync curl nano htop i2c-tools grep vim pkgconfig stressapptest systemd-analyze lftp python"
 
 # More libraries that application needed
@@ -75,7 +78,7 @@ IMAGE_INSTALL_append = " wl18xx-fw"
 #IMAGE_INSTALL_append = " wl18xx-udev-workaround"
 
 # # Packages for Bluetooth
-#IMAGE_INSTALL += "uim bt-firmware bluez5 obexftp pulseaudio devmem2"
+#IMAGE_INSTALL_append = " uim bt-firmware bluez5 obexftp pulseaudio devmem2"
 
 # Wireless stresstest
 IMAGE_INSTALL_append = " wireless-stresstest"

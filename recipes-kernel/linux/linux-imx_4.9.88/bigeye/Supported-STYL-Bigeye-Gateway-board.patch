@@ -45,7 +45,7 @@ index 0000000..49f5b6f
 +	};
 diff --git a/arch/arm/boot/dts/imx6ull-14x14-bigeye-wifi.dts b/arch/arm/boot/dts/imx6ull-14x14-bigeye-wifi.dts
 new file mode 100644
-index 0000000..7e756f1
+index 0000000..5253791
 --- /dev/null
 +++ b/arch/arm/boot/dts/imx6ull-14x14-bigeye-wifi.dts
 @@ -0,0 +1,73 @@
@@ -122,12 +122,13 @@ index 0000000..7e756f1
 +		auto;
 +	};
 +};
+\ No newline at end of file
 diff --git a/arch/arm/boot/dts/imx6ull-14x14-bigeye.dts b/arch/arm/boot/dts/imx6ull-14x14-bigeye.dts
 new file mode 100644
-index 0000000..e793ddf
+index 0000000..128236f
 --- /dev/null
 +++ b/arch/arm/boot/dts/imx6ull-14x14-bigeye.dts
-@@ -0,0 +1,708 @@
+@@ -0,0 +1,707 @@
 +/*
 + * Copyright (C) 2018 STYL Solutions Pte. Ltd.
 + *
@@ -259,6 +260,11 @@ index 0000000..e793ddf
 +			gpios = <&gpio5 3 GPIO_ACTIVE_HIGH>; /* MX6ULL_PAD_SNVS_TAMPER3__GPIO5_IO03 */
 +		};
 +	};
++	
++	beeper {
++		compatible = "gpio-beeper";
++		gpios = <&gpio5 0 GPIO_ACTIVE_HIGH>;
++	};
 +
 +	regulators {
 +		compatible = "simple-bus";
@@ -309,6 +315,8 @@ index 0000000..e793ddf
 +	pinctrl-0 = <&pinctrl_enet1>;
 +	phy-mode = "rmii";
 +	phy-handle = <&ethphy0>;
++	/* Reset PHY: GPIO5_IO09 */
++	/*phy-reset-gpios = <&gpio5 9 0>;*/
 +	status = "okay";
 +
 +	mdio {
@@ -333,14 +341,6 @@ index 0000000..e793ddf
 +	phy-mode = "rmii";
 +	phy-handle = <&ethphy1>;
 +	status = "disabled";
-+};
-+
-+&gpc {
-+	fsl,cpu_pupscr_sw2iso = <0x1>;
-+	fsl,cpu_pupscr_sw = <0x0>;
-+	fsl,cpu_pdnscr_iso2sw = <0x1>;
-+	fsl,cpu_pdnscr_iso = <0x1>;
-+	fsl,ldo-bypass = <0>; /* DCDC, ldo-enable */
 +};
 +
 +&i2c1 {
@@ -836,6 +836,118 @@ index 0000000..e793ddf
 +	fsl,ext-reset-output;
 +	status = "okay";
 +};
+diff --git a/drivers/input/misc/gpio-beeper.c b/drivers/input/misc/gpio-beeper.c
+index 16272ff..72833b2 100644
+--- a/drivers/input/misc/gpio-beeper.c
++++ b/drivers/input/misc/gpio-beeper.c
+@@ -1,7 +1,7 @@
+ /*
+- * Generic GPIO beeper driver
++ *  Generic GPIO beeper driver
+  *
+- * Copyright (C) 2013-2014 Alexander Shiyan <shc_work@mail.ru>
++ *  Copyright (C) 2013 Alexander Shiyan <shc_work@mail.ru>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -11,8 +11,7 @@
+ 
+ #include <linux/input.h>
+ #include <linux/module.h>
+-#include <linux/gpio/consumer.h>
+-#include <linux/of.h>
++#include <linux/of_gpio.h>
+ #include <linux/workqueue.h>
+ #include <linux/platform_device.h>
+ 
+@@ -20,13 +19,14 @@
+ 
+ struct gpio_beeper {
+ 	struct work_struct	work;
+-	struct gpio_desc	*desc;
++	int			gpio;
++	bool			active_low;
+ 	bool			beeping;
+ };
+ 
+ static void gpio_beeper_toggle(struct gpio_beeper *beep, bool on)
+ {
+-	gpiod_set_value_cansleep(beep->desc, on);
++	gpio_set_value_cansleep(beep->gpio, on ^ beep->active_low);
+ }
+ 
+ static void gpio_beeper_work(struct work_struct *work)
+@@ -65,15 +65,19 @@ static void gpio_beeper_close(struct input_dev *input)
+ static int gpio_beeper_probe(struct platform_device *pdev)
+ {
+ 	struct gpio_beeper *beep;
++	enum of_gpio_flags flags;
+ 	struct input_dev *input;
++	unsigned long gflags;
++	int err;
+ 
+ 	beep = devm_kzalloc(&pdev->dev, sizeof(*beep), GFP_KERNEL);
+ 	if (!beep)
+ 		return -ENOMEM;
+ 
+-	beep->desc = devm_gpiod_get(&pdev->dev, NULL, GPIOD_OUT_LOW);
+-	if (IS_ERR(beep->desc))
+-		return PTR_ERR(beep->desc);
++	beep->gpio = of_get_named_gpio_flags(pdev->dev.of_node, "gpios",
++					     0, &flags);
++	if (!gpio_is_valid(beep->gpio))
++		return -EINVAL;
+ 
+ 	input = devm_input_allocate_device(&pdev->dev);
+ 	if (!input)
+@@ -82,6 +86,7 @@ static int gpio_beeper_probe(struct platform_device *pdev)
+ 	INIT_WORK(&beep->work, gpio_beeper_work);
+ 
+ 	input->name		= pdev->name;
++	input->phys		= BEEPER_MODNAME "/input0";
+ 	input->id.bustype	= BUS_HOST;
+ 	input->id.vendor	= 0x0001;
+ 	input->id.product	= 0x0001;
+@@ -91,23 +96,29 @@ static int gpio_beeper_probe(struct platform_device *pdev)
+ 
+ 	input_set_capability(input, EV_SND, SND_BELL);
+ 
++	beep->active_low = flags & OF_GPIO_ACTIVE_LOW;
++	gflags = beep->active_low ? GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
++
++	err = devm_gpio_request_one(&pdev->dev, beep->gpio, gflags, pdev->name);
++	if (err)
++		return err;
++
+ 	input_set_drvdata(input, beep);
+ 
+ 	return input_register_device(input);
+ }
+ 
+-#ifdef CONFIG_OF
+-static const struct of_device_id gpio_beeper_of_match[] = {
++static struct of_device_id gpio_beeper_of_match[] = {
+ 	{ .compatible = BEEPER_MODNAME, },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, gpio_beeper_of_match);
+-#endif
+ 
+ static struct platform_driver gpio_beeper_platform_driver = {
+ 	.driver	= {
+ 		.name		= BEEPER_MODNAME,
+-		.of_match_table	= of_match_ptr(gpio_beeper_of_match),
++		.owner		= THIS_MODULE,
++		.of_match_table	= gpio_beeper_of_match,
+ 	},
+ 	.probe	= gpio_beeper_probe,
+ };
+@@ -115,4 +126,4 @@ static int gpio_beeper_probe(struct platform_device *pdev)
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Alexander Shiyan <shc_work@mail.ru>");
+-MODULE_DESCRIPTION("Generic GPIO beeper driver");
++MODULE_DESCRIPTION("Generic GPIO beeper driver");
 \ No newline at end of file
 diff --git a/drivers/net/wireless/ti/wl18xx/main.c b/drivers/net/wireless/ti/wl18xx/main.c
 index 5bdf7a0..9f98a1b 100644

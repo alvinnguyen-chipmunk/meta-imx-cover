@@ -32,7 +32,7 @@ IMAGE_INSTALL_append = " ttf-dejavu-common ttf-dejavu-sans ttf-dejavu-sans-conde
 IMAGE_INSTALL_remove = " qtwayland"
 
 # qtcreator debug
-IMAGE_INSTALL_append = " packagegroup-qt5-qtcreator-debug"
+#IMAGE_INSTALL_append = " packagegroup-qt5-qtcreator-debug"
 
 # GDB support
 IMAGE_INSTALL_append = " gdb gdbserver"

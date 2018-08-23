@@ -43,6 +43,85 @@ index 0000000..49f5b6f
 +		};
 +
 +	};
+diff --git a/arch/arm/boot/dts/imx6ull-14x14-bigeye-flasher.dts b/arch/arm/boot/dts/imx6ull-14x14-bigeye-flasher.dts
+new file mode 100644
+index 0000000..813226e
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6ull-14x14-bigeye-flasher.dts
+@@ -0,0 +1,73 @@
++/*
++ * Copyright (C) 2018 STYL Solutions Pte. Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <dt-bindings/input/input.h>
++#include "imx6ull-14x14-bigeye-wifi.dts"
++
++&clks {
++	assigned-clocks = <&clks IMX6UL_CLK_PLL4_AUDIO_DIV>;
++	assigned-clock-rates = <786432000>;
++};
++
++&fec1 {
++	status = "disabled";
++};
++
++&fec2 {
++	status = "disabled";
++};
++
++&i2c2 {
++	status = "disabled";
++};
++
++&lcdif {
++	status = "disabled";
++};
++
++&pxp {
++	status = "disabled";
++};
++
++&uart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart1>;
++	status = "okay";
++};
++
++&uart2 {
++	status = "disabled";
++};
++
++&uart6 {
++	status = "disabled";
++};
++
++&uart7 {
++	status = "disabled";
++};
++
++&usbotg1 {
++	status = "disabled";
++};
++
++&usbotg2 {
++	status = "disabled";
++};
++
++&usdhc1 {
++	status = "okay";
++};
++
++&usdhc2 {
++	status = "okay";
++};
++
++&wdog1 {
++	status = "disabled";
++};
 diff --git a/arch/arm/boot/dts/imx6ull-14x14-bigeye-wifi.dts b/arch/arm/boot/dts/imx6ull-14x14-bigeye-wifi.dts
 new file mode 100644
 index 0000000..5253791
@@ -125,10 +204,10 @@ index 0000000..5253791
 \ No newline at end of file
 diff --git a/arch/arm/boot/dts/imx6ull-14x14-bigeye.dts b/arch/arm/boot/dts/imx6ull-14x14-bigeye.dts
 new file mode 100644
-index 0000000..128236f
+index 0000000..6964911
 --- /dev/null
 +++ b/arch/arm/boot/dts/imx6ull-14x14-bigeye.dts
-@@ -0,0 +1,707 @@
+@@ -0,0 +1,708 @@
 +/*
 + * Copyright (C) 2018 STYL Solutions Pte. Ltd.
 + *
@@ -721,8 +800,9 @@ index 0000000..128236f
 +
 +&lcdif {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <	&pinctrl_lcdif_dat
-+			&pinctrl_lcdif_ctrl>;
++	/*pinctrl-0 = <	&pinctrl_lcdif_dat
++					&pinctrl_lcdif_ctrl>;*/
++	pinctrl-0 = <&pinctrl_lcdif_ctrl>;
 +	display = <&display0>;
 +	status = "okay";
 +

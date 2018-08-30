@@ -119,6 +119,11 @@ else
     cp $BUILD_DIR/conf/local.conf.org $BUILD_DIR/conf/local.conf
 fi
 
+# Check that build flasher or not
+if [ "${DO_FLASHER}" = "Y" ]; then
+    FLASHER_STR="STYL_FLASHER_IMAGE"
+    echo "${FLASHER_STR}=\"Y\"" >> $BUILD_DIR/conf/local.conf
+fi
 
 if [ ! -e $BUILD_DIR/conf/bblayers.conf.org ]; then
     cp $BUILD_DIR/conf/bblayers.conf $BUILD_DIR/conf/bblayers.conf.org

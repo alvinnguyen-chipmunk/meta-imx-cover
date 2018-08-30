@@ -1,0 +1,28 @@
+setenv autoload       'no'
+
+setenv sdcard_preboot 'setenv src_dev 0; setenv src_par 1; setenv name_kernel zImage; setenv name_dtb imx6ull-14x14-bigeye-flasher.dtb; setenv addr_kernel 0x80800000; setenv addr_dtb 0x83800000'
+
+setenv load_dtb       'fatload mmc ${src_dev}:${src_par} ${addr_dtb}    ${name_dtb}'
+setenv load_kernel    'fatload mmc ${src_dev}:${src_par} ${addr_kernel} ${name_kernel}'
+
+setenv gpio_cmd       ''
+setenv console        'ttymxc0'
+setenv baudrate       '115200'
+setenv smp            'nosmp'
+setenv video_a        'video=mxcfb0:dev=ldb,LDB-VGA,if=RGB666,bpp=32'
+setenv video_b		  'video=mxc_elcdif_fb:800x480M,bpp=16'
+setenv video_c  	  'video=mxsfb:800x480M-16@60'
+setenv sdcard_rootfs  '/dev/mmcblk0p2 rootfstype=ext4 rootwait rw x11=false'
+setenv common_args    'init=/lib/systemd/systemd ${smp} ${video_b} vt.global_cursor_default=0 consoleblank=0'
+
+setenv sdcard_args    'setenv bootargs console=${console},${baudrate} root=${sdcard_rootfs} ${common_args}'
+
+setenv bootexec       'bootz ${addr_kernel} - ${addr_dtb}'
+
+setenv sdcard_string  'echo [STYL-Bigeye-Gateway] [Kernel-4.9.88] [SDCARD-Images] [Reflashing]'
+
+setenv sdcardbootcmd  'run sdcard_string; run gpio_cmd; run sdcard_preboot; if run load_kernel; then if run load_dtb; then run sdcard_args; run bootexec; fi; fi'
+
+setenv bootcmd        'mmc rescan; if mmc dev 0; then run sdcardbootcmd; fi'
+
+run bootcmd

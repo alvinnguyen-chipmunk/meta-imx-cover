@@ -8,6 +8,7 @@ FILESEXTRAPATHS_append := "${THISDIR}/${PN}:"
 SRC_URI += "	file://bigeye-sdcard.script	\
 		file://bigeye-wifi.script  	\
 		file://bigeye-manual.script  	\
+		file://bigeye-flasher.script  	\
 "
 
 DESTDIR = "/boot"

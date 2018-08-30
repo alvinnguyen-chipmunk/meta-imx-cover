@@ -147,6 +147,8 @@ echo "BBLAYERS += \" \${BSPDIR}/sources/meta-ti \"" >> $BUILD_DIR/conf/bblayers.
 
 echo "BBLAYERS += \" \${BSPDIR}/sources/meta-imx-cover \"" >> $BUILD_DIR/conf/bblayers.conf
 
+echo "BBLAYERS += \" \${BSPDIR}/sources/meta-swupdate \"" >> $BUILD_DIR/conf/bblayers.conf
+
 echo BSPDIR=$BSPDIR
 echo BUILD_DIR=$BUILD_DIR
 

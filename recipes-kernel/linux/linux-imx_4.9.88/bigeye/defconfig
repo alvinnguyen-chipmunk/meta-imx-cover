@@ -3335,7 +3335,6 @@ CONFIG_MMC_CQHCI=y
 #
 # MXC Vivante GPU support
 #
-# CONFIG_MXC_GPU_VIV is not set
 # CONFIG_MX8_HDP is not set
 # CONFIG_MX8_HDP_DP is not set
 # CONFIG_MX8_HDP_HDMI is not set

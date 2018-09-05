@@ -11169,10 +11169,10 @@ index 0000000..4ca7872
 +# CONFIG_UNIT_TEST is not set
 diff --git a/include/configs/mx6ull-bigeye.h b/include/configs/mx6ull-bigeye.h
 new file mode 100644
-index 0000000..77a9165
+index 0000000..77ba3db
 --- /dev/null
 +++ b/include/configs/mx6ull-bigeye.h
-@@ -0,0 +1,175 @@
+@@ -0,0 +1,189 @@
 +/*
 + * Copyright (C) 2016 Freescale Semiconductor, Inc.
 + * Copyright 2017-2018 NXP
@@ -11232,27 +11232,41 @@ index 0000000..77a9165
 +/*#define CONFIG_DM_PMIC*/
 +
 +/* ENVIRONMENT */
-+#define CONFIG_SYS_MMC_IMG_LOAD_PART	1
++#define CONFIG_SYS_SD_IMG_LOAD_DEV		0	/* USDHC1 */
++#define CONFIG_SYS_SD_IMG_LOAD_PART		1
++#define CONFIG_SYS_MMC_IMG_LOAD_DEV		1	/* USDHC2 */
++#define CONFIG_SYS_MMC_IMG_LOAD_PART		1
 +
 +#define MFG_NAND_PARTITION ""
 +
 +#define CONFIG_EXTRA_ENV_SETTINGS \
 +	"script=boot.scr\0" \
 +	"console=ttymxc0\0" \
-+        "mmcdev="__stringify(CONFIG_SYS_MMC_ENV_DEV)"\0" \
++	"sddev="__stringify(CONFIG_SYS_SD_IMG_LOAD_DEV)"\0" \
++        "sdpart=" __stringify(CONFIG_SYS_SD_IMG_LOAD_PART) "\0" \
++        "mmcdev="__stringify(CONFIG_SYS_MMC_IMG_LOAD_DEV)"\0" \
 +        "mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
-+	"loadbootscript=" \
++        "loadbootscript_sd=" \
++		"fatload mmc ${sddev}:${sdpart} ${loadaddr} ${script};\0" \
++        "loadbootscript_mmc=" \
 +		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
-+	"bootscript=echo Running bootscript from mmc ...; " \
++	"bootscript=echo Running bootscript ...; " \
 +		"source\0" \
 +
 +#define CONFIG_BOOTCOMMAND \
-+	   "mmc dev ${mmcdev};" \
-+	   "mmc dev ${mmcdev}; if mmc rescan; then " \
-+		   "if run loadbootscript; then " \
-+			   "run bootscript; " \
-+		   "fi; " \
-+	   "fi"
++	"mmc dev ${mmcdev};" \
++	"mmc dev ${mmcdev};" \
++	"if mmc rescan; then " \
++		"if mmc dev 0; then " \
++			"if run loadbootscript_sd; then " \
++				"run bootscript; " \
++			"fi; " \
++		"elif mmc dev 1; then " \
++			"if run loadbootscript_mmc; then " \
++				"run bootscript; " \
++			"fi; " \
++		"fi; " \
++	"fi; " \
 +
 +/* Miscellaneous configurable options */
 +#define CONFIG_SYS_MEMTEST_START	0x80000000

@@ -25,7 +25,8 @@ IMAGE_INSTALL_append = "\
 IMAGE_INSTALL_append = " openssh openssh-sftp-server"
 
 # Qt support
-IMAGE_INSTALL_append = " packagegroup-qt5-full qtbase"
+#IMAGE_INSTALL_append = " packagegroup-qt5-full qtbase"
+IMAGE_INSTALL_append = " qtbase"
 
 IMAGE_INSTALL_append = " ttf-dejavu-common ttf-dejavu-sans ttf-dejavu-sans-condensed ttf-dejavu-sans-mono ttf-dejavu-serif python  ttf-dejavu-serif-condensed"
 

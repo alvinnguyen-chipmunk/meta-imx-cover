@@ -19,7 +19,7 @@ PV = "1.0"
 
 SD_BC_RDEPENDS = ""
 SD_BV_RDEPENDS = " reader-emvconf-tool reader-serial-service reader-utils"
-RDEPENDS_${PN} = "bash ${@bb.utils.contains(${MACHINE_ARCH},'yellowfinsd_bv','${SD_BV_RDEPENDS}','${SD_BC_RDEPENDS}',d)}"
+RDEPENDS_${PN} = "bash ${@bb.utils.contains('$MACHINE_ARCH','yellowfinsd_bv','${SD_BV_RDEPENDS}','${SD_BC_RDEPENDS}',d)}"
 
 S = "${WORKDIR}"
 
